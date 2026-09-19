@@ -53,6 +53,7 @@ import {
   createVerifyToken,
   endSession,
   hasAccounts,
+  isConfirmed,
   markOnboarded,
   readCookie,
   resetPassword,
@@ -111,7 +112,7 @@ app.use((req, res, next) => {
   if (user) {
     res.locals.user = user;
     // An unconfirmed address may only reach the confirm screen and its own routes.
-    if (!user.emailVerified && req.path !== "/verify.html") {
+    if (!isConfirmed(user, mailConfigured()) && req.path !== "/verify.html") {
       if (req.path.startsWith("/api/")) return res.status(403).json({ error: "Confirm your email to continue.", needsVerification: true });
       return res.redirect("/verify.html");
     }
@@ -146,12 +147,13 @@ function authFailure(res: express.Response, e: unknown) {
 
 app.get("/api/auth/status", (req, res) => {
   const user = sessionUser(req);
-  res.json({ user: user ? toPublic(user) : null, hasAccounts: hasAccounts(), signupOpen: signupOpen() });
+  const publicUser = user ? { ...toPublic(user), emailVerified: isConfirmed(user, mailConfigured()) } : null;
+  res.json({ user: publicUser, hasAccounts: hasAccounts(), signupOpen: signupOpen() });
 });
 
 /** Where someone belongs after signing in: confirm, set up, or straight to work. */
 function nextPageFor(user: User): string {
-  if (!user.emailVerified) return "verify.html";
+  if (!isConfirmed(user, mailConfigured())) return "verify.html";
   if (!user.onboardedAt || setupGaps(loadSettings()).length) return "onboarding.html";
   return "today.html";
 }

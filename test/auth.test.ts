@@ -136,3 +136,17 @@ test("setup is recorded once", () => {
   assert.equal(auth.markOnboarded(user.id)?.onboardedAt, first?.onboardedAt);
   assert.equal(auth.toPublic(auth.userById(user.id)!).onboarded, true);
 });
+
+test("a server that cannot send mail does not demand a confirmation", () => {
+  process.env.MUSTER_OPEN_SIGNUP = "true";
+  try {
+    const waiting = auth.createUser({ name: "Stuck", email: "stuck@example.com", password: "longenough" }, { requireVerification: true });
+    assert.equal(waiting.emailVerified, false);
+    // Sending is on: the link is the only way in.
+    assert.equal(auth.isConfirmed(waiting, true), false);
+    // Sending is off: waiting for a message that cannot arrive helps nobody.
+    assert.equal(auth.isConfirmed(waiting, false), true);
+  } finally {
+    delete process.env.MUSTER_OPEN_SIGNUP;
+  }
+});

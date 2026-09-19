@@ -181,6 +181,18 @@ export function userById(id: string): User | null {
   return users().find((u) => u.id === id) ?? null;
 }
 
+/**
+ * Whether this account may use the app.
+ *
+ * A server that cannot send a confirmation link has no business demanding one:
+ * the person would wait for a message that can never arrive. So when sending is
+ * off, every account counts as confirmed, including one that signed up while
+ * sending was on and never got its link.
+ */
+export function isConfirmed(user: User, canSendMail: boolean): boolean {
+  return user.emailVerified || !canSendMail;
+}
+
 export function authenticate(emailInput: unknown, password: unknown): User {
   const email = normalizeEmail(emailInput);
   const user = users().find((u) => u.email === email);
