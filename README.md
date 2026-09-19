@@ -89,7 +89,10 @@ Every app screen and API needs a signed in user. The landing page, the auth scre
 - The first account created owns the workspace, and sign up closes after it. Set `MUSTER_OPEN_SIGNUP=true` to let more people join the same workspace.
 - Passwords are hashed with scrypt. Sessions live in an HttpOnly cookie for 30 days with **Remember me**, 12 hours without it.
 - Five wrong passwords for one email lock sign in for 15 minutes.
-- New accounts confirm their address before they can reach the app. Set `MUSTER_RESEND_KEY` and `MUSTER_MAIL_FROM` to send the link; with neither set, sending is off and accounts are created already confirmed rather than stranding anyone.
+- New accounts confirm their address before they can reach the app. Set `MUSTER_MAIL_FROM` and one provider key to send the link:
+  - `MUSTER_BREVO_KEY`: Brevo verifies one sender address, a plain Gmail address is fine, and then delivers to anybody. Use this when strangers can sign up.
+  - `MUSTER_RESEND_KEY`: Resend needs a domain you own before it delivers to anyone but the account holder.
+  With no key, sending is off, and then no account is held back waiting for a link that cannot arrive, including one that signed up while sending was on.
 - Setup runs once per account. Finishing it is recorded, so nobody is walked through it twice.
 - Without a mail provider, reset a password with `npm run reset-password -- you@company.com` and open the link it prints within 30 minutes. `npm run mail-test -- you@company.com` checks a mail setup.
 

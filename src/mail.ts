@@ -1,19 +1,23 @@
 /**
  * Sending email.
  *
- * Muster sends two kinds of message today: verify your address, and reset your
- * password. It talks to Resend over HTTPS, so there is no mail library to
- * install and no SMTP server to run.
+ * Muster sends two kinds of message today: confirm your address, and reset your
+ * password. Both go out over HTTPS, so there is no mail library to install and
+ * no SMTP server to run.
  *
- * With no key set, sending is off. Nothing pretends to have been sent: the
- * server logs the link instead, and the app says verification is off.
+ * Two providers, because their free tiers differ in the way that matters:
+ *
+ *   Brevo    verifies one sender address, a plain Gmail address is fine, and
+ *            then delivers to anybody. That is what a public sign up needs.
+ *   Resend   needs a domain you own before it will deliver to anyone except
+ *            the address that owns the account.
+ *
+ * Whichever key is set is used, Brevo first. With neither, sending is off:
+ * nothing pretends to have been sent, the server logs the link instead, and an
+ * account is not held back waiting for a message that cannot arrive.
  */
 
-const API = "https://api.resend.com/emails";
-
-export function mailConfigured(): boolean {
-  return Boolean(process.env.MUSTER_RESEND_KEY && process.env.MUSTER_MAIL_FROM);
-}
+export type Provider = "brevo" | "resend";
 
 export interface Message {
   to: string;
@@ -22,32 +26,77 @@ export interface Message {
   html?: string;
 }
 
-export async function sendMail(message: Message): Promise<{ sent: boolean; reason?: string }> {
-  if (!mailConfigured()) return { sent: false, reason: "no mail provider is configured on this server" };
-  try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.MUSTER_RESEND_KEY}`,
-        "Content-Type": "application/json",
+export function mailProvider(): Provider | null {
+  if (!process.env.MUSTER_MAIL_FROM) return null;
+  if (process.env.MUSTER_BREVO_KEY) return "brevo";
+  if (process.env.MUSTER_RESEND_KEY) return "resend";
+  return null;
+}
+
+export function mailConfigured(): boolean {
+  return mailProvider() !== null;
+}
+
+/** Reads `Muster <hello@example.com>` into its two parts. A bare address works too. */
+export function parseFrom(value: string): { name: string; email: string } {
+  const match = value.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
+  if (match) return { name: match[1].replace(/^"|"$/g, "") || "Muster", email: match[2].trim() };
+  return { name: "Muster", email: value.trim() };
+}
+
+/** The HTTP call for one provider, kept separate from sending so it can be checked. */
+export function buildRequest(provider: Provider, message: Message, from: string, key: string): { url: string; init: RequestInit } {
+  const sender = parseFrom(from);
+  if (provider === "brevo") {
+    return {
+      url: "https://api.brevo.com/v3/smtp/email",
+      init: {
+        method: "POST",
+        headers: { "api-key": key, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          sender,
+          to: [{ email: message.to }],
+          subject: message.subject,
+          textContent: message.text,
+          ...(message.html ? { htmlContent: message.html } : {}),
+        }),
       },
+    };
+  }
+  return {
+    url: "https://api.resend.com/emails",
+    init: {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: process.env.MUSTER_MAIL_FROM,
+        from,
         to: [message.to],
         subject: message.subject,
         text: message.text,
         ...(message.html ? { html: message.html } : {}),
       }),
-    });
+    },
+  };
+}
+
+export async function sendMail(message: Message): Promise<{ sent: boolean; provider?: Provider; reason?: string }> {
+  const provider = mailProvider();
+  if (!provider) return { sent: false, reason: "no mail provider is configured on this server" };
+
+  const key = (provider === "brevo" ? process.env.MUSTER_BREVO_KEY : process.env.MUSTER_RESEND_KEY)!;
+  const { url, init } = buildRequest(provider, message, process.env.MUSTER_MAIL_FROM!, key);
+
+  try {
+    const res = await fetch(url, init);
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error(`[mail] ${res.status} ${body.slice(0, 200)}`);
-      return { sent: false, reason: `the mail provider refused the message (${res.status})` };
+      console.error(`[mail] ${provider} answered ${res.status}: ${body.slice(0, 200)}`);
+      return { sent: false, provider, reason: `the mail provider refused the message (${res.status})` };
     }
-    return { sent: true };
+    return { sent: true, provider };
   } catch (e: any) {
-    console.error(`[mail] ${e.message}`);
-    return { sent: false, reason: "the mail provider could not be reached" };
+    console.error(`[mail] ${provider}: ${e.message}`);
+    return { sent: false, provider, reason: "the mail provider could not be reached" };
   }
 }
 
