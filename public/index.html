@@ -184,6 +184,25 @@
     .note path { stroke-dashoffset: 0; }
   }
 
+
+  /* ---------- Footer ---------- */
+  .site-foot { max-width: 1280px; margin: 0 auto; padding: 56px clamp(16px, 6.4vw, 82px) 40px; border-top: 1px solid var(--line); }
+  .foot-top { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); gap: 32px; }
+  .foot-top .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; color: var(--navy); }
+  .foot-top .brand svg { width: 26px; height: 22px; }
+  .foot-top p { margin: 12px 0 0; max-width: 340px; font-size: 12.5px; line-height: 1.65; color: var(--body); }
+  .foot-top nav { display: grid; align-content: start; gap: 9px; }
+  .foot-top nav b { font-size: 12px; color: var(--navy); }
+  .foot-top nav a { font-size: 12.5px; color: var(--body); }
+  .foot-top nav a:hover { color: var(--blue); }
+  .built { margin-top: 34px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+  .built b { display: block; font-size: 12px; color: var(--navy); }
+  .built p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--body); }
+  .built a { color: var(--blue); font-weight: 600; }
+  .built a:hover { text-decoration: underline; }
+  .foot-end { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 26px; font-size: 11.5px; color: #8a90a2; }
+  @media (max-width: 760px) { .foot-top { grid-template-columns: 1fr 1fr; } .foot-top > :first-child { grid-column: 1 / -1; } }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 1100px) {
     .links { gap: 24px; padding-left: 24px; }
@@ -1380,6 +1399,45 @@
     </div>
   </section>
 </main>
+
+  <!-- ============================== Footer ============================== -->
+  <footer class="site-foot">
+    <div class="foot-top">
+      <div>
+        <a class="brand" href="#top" aria-label="Muster home"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</a>
+        <p>Evening check-in calls to every subcontractor booked for tomorrow, so the morning holds no surprises.</p>
+      </div>
+      <nav aria-label="Footer">
+        <b>Product</b>
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">Questions</a>
+      </nav>
+      <nav aria-label="Account">
+        <b>Account</b>
+        <a href="signin.html">Sign in</a>
+        <a href="signup.html">Create account</a>
+        <a href="help.html">Help</a>
+      </nav>
+    </div>
+
+    <div class="built">
+      <b>Built with</b>
+      <p>
+        Muster runs on the <a href="https://www.assemblyai.com/products/voice-agents" target="_blank" rel="noreferrer noopener">AssemblyAI Voice Agent API</a>,
+        which listens to the foreman and speaks back in English or Spanish, and on
+        <a href="https://www.twilio.com/" target="_blank" rel="noreferrer noopener">Twilio</a>, which places the call and carries the audio.
+        Crew lists and tomorrow's plan can live in <a href="https://www.google.com/sheets/about/" target="_blank" rel="noreferrer noopener">Google Sheets</a>, and results are written back to the same row.
+      </p>
+    </div>
+
+    <div class="foot-end">
+      <span>Muster</span>
+      <span>Built for the AssemblyAI Voice Agent Hackathon, 2026.</span>
+    </div>
+  </footer>
+
 <script>
   // Sticky header gains its backdrop once the page moves.
   const header = document.querySelector("header");
