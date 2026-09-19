@@ -9,6 +9,7 @@
 import { loadSettings, sheetIdFrom } from "./settings";
 import { getCheckIn, onCheckInSaved, readState, writeState } from "./store";
 import { listBookings, listCrew } from "./workspace";
+import { publicBase } from "./public-url";
 import type { Project } from "./domain/types";
 import { addDays, localMoment } from "./domain/zoned";
 import { addSheet, readRange, sheetTitles, writeRange } from "./sheets/google";
@@ -176,7 +177,7 @@ async function writeResult(activityId: string) {
   }
 
   const checkIn = getCheckIn(snap.project, activityId);
-  const base = (process.env.HOSTNAME || "").replace(/\/$/, "");
+  const base = publicBase();
   const values = resultRow(activity, checkIn, {
     timezone: snap.project.timezone,
     callLogUrl: (callId) => (base ? `${base}/calls.html?id=${callId}` : null),

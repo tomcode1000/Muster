@@ -13,6 +13,7 @@ import { localMoment, withinHours } from "../domain/zoned";
 import { getCheckIn, saveCheckIn } from "../store";
 import type { Settings } from "../settings";
 import { recordDial, usageNow } from "../usage";
+import { publicBase } from "../public-url";
 
 const FINAL = new Set(["completed", "busy", "no-answer", "failed", "canceled"]);
 
@@ -58,13 +59,13 @@ async function place(
 }
 
 export async function runRound(opts: RoundOptions): Promise<RoundResult> {
-  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, HOSTNAME } = process.env;
-  for (const [k, v] of Object.entries({ TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, HOSTNAME })) {
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+  const base = publicBase();
+  for (const [k, v] of Object.entries({ TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, MUSTER_PUBLIC_URL: base })) {
     if (!v) throw new Error(`Missing ${k} in .env`);
   }
   const log = opts.log ?? console.log;
   const twilio = Twilio(TWILIO_ACCOUNT_SID!, TWILIO_AUTH_TOKEN!);
-  const base = HOSTNAME!.replace(/\/$/, "");
   const { project, schedule, phone } = opts;
   const from = phone.useOwnNumber && phone.number ? phone.number : TWILIO_PHONE_NUMBER!;
   const result: RoundResult = { called: 0, reached: 0, remaining: 0, stoppedReason: null, limitReached: false };

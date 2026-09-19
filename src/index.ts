@@ -23,6 +23,7 @@ import { getCall, listCalls, listCheckIns } from "./store";
 import { currentProject, lastSnapshot, refreshFromSheet, startSheetMirror, tomorrow } from "./source";
 import { loadSettings, saveSettings, setupGaps, sheetIdFrom } from "./settings";
 import { serviceAccountEmail } from "./sheets/google";
+import { publicBase, publicHost } from "./public-url";
 import { scheduleState, startRound, startScheduler, stopRound } from "./calls/scheduler";
 import {
   addBooking,
@@ -157,7 +158,7 @@ function nextPageFor(user: User): string {
 /** Sends the confirmation link, or reports why it could not be sent. */
 async function sendVerification(user: User, req: express.Request) {
   const token = createVerifyToken(user.id);
-  const base = (process.env.HOSTNAME || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+  const base = publicBase() || `${req.protocol}://${req.get("host")}`;
   const url = `${base}/verify.html?token=${token}`;
   const result = await sendMail({
     to: user.email,
@@ -667,11 +668,12 @@ app.post("/api/sheet/refresh", async (_req, res) => {
 });
 
 app.post("/api/phone/test", async (req, res) => {
-  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, HOSTNAME } = process.env;
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+  const base = publicBase();
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
     return res.status(400).json({ error: "Twilio is not set up on this server. Add the Twilio keys to .env." });
   }
-  if (!HOSTNAME) return res.status(400).json({ error: "HOSTNAME is not set in .env, so Twilio cannot reach this server." });
+  if (!base) return res.status(400).json({ error: "MUSTER_PUBLIC_URL is not set to this server's https address, so Twilio cannot reach it." });
 
   const settings = loadSettings();
   const to = String(req.body?.to ?? "").replace(/[^\d+]/g, "");
@@ -682,7 +684,7 @@ app.post("/api/phone/test", async (req, res) => {
     const call = await Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN).calls.create({
       to,
       from,
-      url: `${HOSTNAME.replace(/\/$/, "")}/twilio/test`,
+      url: `${base}/twilio/test`,
     });
     // A test call is a real call, so it counts like any other.
     recordDial();
@@ -721,9 +723,9 @@ app.post("/api/rounds/stop", (_req, res) => {
 
 app.post("/twilio/outbound", (req, res) => {
   const booking = findBooking(req.query.activity, dateParam(req.query.date));
-  const host = (process.env.HOSTNAME || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const host = publicHost();
   if (!booking || !host) {
-    console.error(`[twilio] outbound TwiML refused: ${!host ? "HOSTNAME not set" : "unknown activity"}`);
+    console.error(`[twilio] outbound TwiML refused: ${!host ? "MUSTER_PUBLIC_URL not set" : "unknown activity"}`);
     res.type("text/xml").send(`<Response><Hangup/></Response>`);
     return;
   }
@@ -897,9 +899,9 @@ app.listen(port, () => {
   console.log(`Muster running on http://localhost:${port}`);
   // Phone calls fail silently when this is stale, so state it at every start.
   console.log(
-    process.env.HOSTNAME
-      ? `Phone calls will send Twilio to: ${process.env.HOSTNAME}`
-      : "Phone calls are off: HOSTNAME is not set in .env",
+    publicBase()
+      ? `Phone calls will send Twilio to: ${publicBase()}`
+      : "Phone calls are off: MUSTER_PUBLIC_URL is not set to this server's https address",
   );
   console.log(`Talk page: http://localhost:${port}/talk.html`);
 });

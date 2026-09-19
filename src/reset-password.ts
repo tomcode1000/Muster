@@ -8,6 +8,7 @@
 
 import "dotenv-flow/config";
 import { AuthError, createResetToken } from "./auth";
+import { publicBase } from "./public-url";
 
 const email = process.argv[2];
 if (!email) {
@@ -17,7 +18,7 @@ if (!email) {
 
 try {
   const { token, user } = createResetToken(email);
-  const base = (process.env.HOSTNAME || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
+  const base = publicBase() || `http://localhost:${process.env.PORT || 3000}`;
   console.log(`Reset link for ${user.name} (${user.email}), valid for 30 minutes:`);
   console.log(`${base}/signin.html?reset=${token}`);
 } catch (e) {

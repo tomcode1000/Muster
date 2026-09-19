@@ -6,6 +6,7 @@
 
 import "dotenv-flow/config";
 import { linkMessage, mailConfigured, sendMail } from "./mail";
+import { publicBase } from "./public-url";
 
 const to = process.argv[2];
 if (!to) {
@@ -18,7 +19,7 @@ if (!mailConfigured()) {
   process.exit(1);
 }
 
-const base = (process.env.HOSTNAME || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
+const base = publicBase() || `http://localhost:${process.env.PORT || 3000}`;
 
 sendMail({
   to,

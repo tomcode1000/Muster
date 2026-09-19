@@ -1,0 +1,70 @@
+# Render blueprint for Muster.
+#
+# Two things about this app decide the shape of the deployment.
+#
+# Twilio opens a media stream back to the server for the length of every call,
+# so Muster has to be a web service that stays up, not a job that wakes, runs
+# and exits. And the round is driven by a timer inside that process, checking
+# the clock every thirty seconds, so the process being asleep at call time
+# means no calls go out.
+#
+# This blueprint uses the free instance, which needs no card. Two limits come
+# with it, and both have answers:
+#
+#   It sleeps after about fifteen minutes idle. An uptime pinger hitting
+#   /health every ten minutes keeps it awake. A month is 720 hours and the
+#   free allowance is 750 instance hours, so one always awake service fits.
+#   The scheduler also recovers on its own: it runs a round it slept through,
+#   as long as calling hours have not ended.
+#
+#   It has no disk, so data/ is wiped on every deploy and restart. Accounts,
+#   crew, bookings and transcripts go with it. MUSTER_OPEN_SIGNUP below lets
+#   the next visitor create an account rather than meeting a locked workspace.
+#
+# For real use, switch to the paid instance with a disk. The last comment in
+# this file says how.
+
+services:
+  - type: web
+    name: muster
+    runtime: node
+    plan: free
+    # ci installs what the lockfile pins. --include=dev because the start
+    # script runs through ts-node, which is a devDependency.
+    buildCommand: npm ci --include=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      # The address Twilio dials back on, and the one email links point to.
+      # Render only knows it after the first deploy, so set it in the
+      # dashboard to https://<your-service>.onrender.com once it exists.
+      - key: MUSTER_PUBLIC_URL
+        sync: false
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      # A wiped workspace has no accounts, so let a visitor create one.
+      - key: MUSTER_OPEN_SIGNUP
+        value: "true"
+      # Set these in the dashboard only if you use them:
+      #   MUSTER_PHONE_OVERRIDE   ring one verified number while testing
+      #   MUSTER_RESEND_KEY       sending confirmation and reset links
+      #   MUSTER_MAIL_FROM
+      #   MUSTER_SUPPORT_EMAIL
+      #   MUSTER_PLAN             free, pro or business
+
+# Keeping data through a deploy, when this stops being a demonstration:
+#
+#   plan: starter
+#   disk:
+#     name: muster-data
+#     mountPath: /var/lib/muster
+#     sizeGB: 1
+#
+# and add MUSTER_DATA_DIR=/var/lib/muster to envVars. That instance never
+# sleeps, so the uptime pinger can be switched off at the same time.

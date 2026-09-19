@@ -30,10 +30,36 @@ Twilio must reach this server over the internet.
 
 1. Put your Twilio SID, auth token and number in `.env`.
 2. Start a tunnel: `cloudflared tunnel --url http://localhost:3000`. The free ngrok tier blocks the audio stream Twilio opens.
-3. Put the tunnel's `https://` address in `HOSTNAME`, then restart `npm start`. The server prints the address it will give Twilio.
+3. Put the tunnel's `https://` address in `MUSTER_PUBLIC_URL`, then restart `npm start`. The server prints the address it will give Twilio.
 4. While testing, set `MUSTER_PHONE_OVERRIDE` to one verified number so every call rings you.
 
 The laptop's internet must not come from the phone being called, or answering the call cuts the server off.
+
+## Deploy on Render
+
+`render.yaml` describes the deployment. In the Render dashboard, choose **New**, **Blueprint**, and point it at this repository.
+
+Two things about Muster shape that file, and they are worth knowing before you pick a plan.
+
+Twilio holds a media stream open for the length of every call, so Muster has to be a service that stays up, not a function that answers one request. The evening round is driven by a timer inside that same process, so an instance asleep at call time places no calls. That rules out serverless hosts.
+
+The blueprint uses the free instance, which needs no card. It sleeps after about fifteen minutes idle, so point a free uptime service at `/health` every ten minutes to keep it awake: a month is 720 hours and the free allowance is 750 instance hours, so one always awake service fits. It also has no disk, so `data/` is wiped on every deploy and restart, taking accounts, crew and transcripts with it. `MUSTER_OPEN_SIGNUP` is set to `true` for that reason, so the next visitor can create an account instead of meeting a locked workspace.
+
+After the first deploy, set these in the dashboard under **Environment**:
+
+| Variable | Value |
+|---|---|
+| `MUSTER_PUBLIC_URL` | `https://<your-service>.onrender.com`, the address Render just gave you |
+| `ASSEMBLYAI_API_KEY` | your key |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | your Twilio credentials |
+
+`MUSTER_PUBLIC_URL` cannot be filled in ahead of time, because Render only settles the address once the service exists. Until it is set, the app runs and the pages work, but phone calls are refused rather than dialled into nowhere, and the server says so at startup.
+
+Set `MUSTER_PUBLIC_URL` rather than `HOSTNAME`. Container platforms set `HOSTNAME` themselves, to the instance id, and Muster would otherwise hand that to Twilio as a web address. `HOSTNAME` is still read when it holds a real URL, so existing tunnel setups keep working.
+
+A sleeping instance is not fatal to the round. The scheduler runs a round it slept through, as long as calling hours have not ended, so a ping shortly before call time is enough to wake it.
+
+The free plan is right for a demonstration and wrong for real use, because of the missing disk. When it stops being a demonstration, switch to the paid instance with a disk and set `MUSTER_DATA_DIR` to the mount path. The end of `render.yaml` gives the exact lines. That instance never sleeps, so the uptime pinger can go at the same time.
 
 ## Pages
 

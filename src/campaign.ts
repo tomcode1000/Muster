@@ -4,7 +4,7 @@
  *   npm run calls               everyone not yet checked in
  *   npm run calls -- <activity> one booking
  *
- * Needs the server running and HOSTNAME pointing at it.
+ * Needs the server running and MUSTER_PUBLIC_URL pointing at it.
  */
 
 import "dotenv-flow/config";
