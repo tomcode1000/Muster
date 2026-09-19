@@ -35,8 +35,10 @@ services:
     # startup, which a 512MB free instance does not survive: the first deploy
     # died with "JavaScript heap out of memory". The built server starts in
     # about 70MB. --include=dev because the compiler is a devDependency.
-    buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm run serve
+    buildCommand: npm ci --include=dev
+    # npm start compiles first, through prestart, then runs the built server.
+    # A host that was configured before this change still ends up compiled.
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       # The address Twilio dials back on, and the one email links point to.

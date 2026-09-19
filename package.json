@@ -4,7 +4,9 @@
   "description": "Evening check-in calls to every subcontractor foreman booked for tomorrow, with a morning plan checked for conflicts.",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "prestart": "npm run build",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "serve": "node dist/index.js",
     "calls": "ts-node src/campaign.ts",

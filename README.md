@@ -18,11 +18,11 @@ Requirements: Node.js 20 or newer, an AssemblyAI API key. Twilio is only needed 
 ```
 npm install
 cp .env.example .env      # add ASSEMBLYAI_API_KEY at minimum
-npm start                 # http://localhost:3000, through ts-node
+npm start                 # compiles, then http://localhost:3000
 npm test
 ```
 
-For a server that starts fast and light, compile first: `npm run build` then `npm run serve`. That is what the deployment does.
+`npm start` compiles to `dist/` and runs the built server, which is what the deployment does. While working on the code, `npm run dev` runs the sources directly through `ts-node` with no build step.
 
 Open `http://localhost:3000`, press **Get Started**, create your account, and follow setup: project, crew, call schedule. Then add bookings on **Plan** and use **Try a check-in** to talk to the agent from the browser.
 
@@ -41,7 +41,7 @@ The laptop's internet must not come from the phone being called, or answering th
 
 `render.yaml` describes the deployment. In the Render dashboard, choose **New**, **Blueprint**, and point it at this repository.
 
-The build compiles TypeScript once and the service runs the compiled output: `npm ci --include=dev && npm run build`, then `npm run serve`. Starting through `ts-node` instead holds the compiler in memory at boot and a free instance runs out of it.
+`npm start` compiles and then runs the built server. Starting through `ts-node` instead holds the compiler in memory beside the running app, and a 512MB free instance dies with a JavaScript heap error before it opens a port.
 
 Two things about Muster shape that file, and they are worth knowing before you pick a plan.
 
