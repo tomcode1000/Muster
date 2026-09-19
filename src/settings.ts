@@ -8,6 +8,7 @@ import * as path from "path";
 import { normalizeClock } from "./domain/time";
 import { parseSheetId } from "./sheets/google";
 import { DEFAULT_PROFILE, validateProfile, type AgentProfile } from "./agent/profile";
+import { scheduleSave } from "./snapshot";
 
 const DATA_DIR = process.env.MUSTER_DATA_DIR || path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "settings.json");
@@ -94,6 +95,7 @@ export function saveSettings(input: unknown): { settings: Settings; errors: stri
     const tmp = `${FILE}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(result.settings, null, 2));
     fs.renameSync(tmp, FILE);
+    scheduleSave();
   }
   return result;
 }

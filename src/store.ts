@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import type { CheckIn, Project } from "./domain/types";
 import { emptyCheckIn } from "./agent/tools";
+import { scheduleSave } from "./snapshot";
 
 const DATA_DIR = process.env.MUSTER_DATA_DIR || path.join(process.cwd(), "data");
 
@@ -55,6 +56,8 @@ function writeJson(file: string, value: unknown) {
   for (let attempt = 0; attempt < 12; attempt++) {
     try {
       fs.renameSync(tmp, file);
+      // Hosts without a disk keep the data in a key value store instead.
+      scheduleSave();
       return;
     } catch (e: any) {
       if (e.code !== "EPERM" && e.code !== "EBUSY" && e.code !== "EACCES") throw e;
@@ -64,6 +67,7 @@ function writeJson(file: string, value: unknown) {
 
   try {
     fs.writeFileSync(file, body);
+    scheduleSave();
     console.error(`[store] ${path.basename(file)} was locked; wrote it directly`);
   } finally {
     try {

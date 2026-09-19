@@ -43,7 +43,9 @@ Two things about Muster shape that file, and they are worth knowing before you p
 
 Twilio holds a media stream open for the length of every call, so Muster has to be a service that stays up, not a function that answers one request. The evening round is driven by a timer inside that same process, so an instance asleep at call time places no calls. That rules out serverless hosts.
 
-The blueprint uses the free instance, which needs no card. It sleeps after about fifteen minutes idle, so point a free uptime service at `/health` every ten minutes to keep it awake: a month is 720 hours and the free allowance is 750 instance hours, so one always awake service fits. It also has no disk, so `data/` is wiped on every deploy and restart, taking accounts, crew and transcripts with it. `MUSTER_OPEN_SIGNUP` is set to `true` for that reason, so the next visitor can create an account instead of meeting a locked workspace.
+The blueprint uses the free instance, which needs no card. It sleeps after about fifteen minutes idle, so point a free uptime service at `/health` every ten minutes to keep it awake: a month is 720 hours and the free allowance is 750 instance hours, so one always awake service fits.
+
+It also has no disk, so `data/` is wiped on every deploy and restart. Muster handles that rather than losing the workspace: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (free at upstash.com, no card) and the data directory is mirrored to that store after every write, then restored at boot. Local files always win, so a machine with a real disk is never overwritten by the mirror.
 
 After the first deploy, set these in the dashboard under **Environment**:
 
@@ -52,6 +54,7 @@ After the first deploy, set these in the dashboard under **Environment**:
 | `MUSTER_PUBLIC_URL` | `https://<your-service>.onrender.com`, the address Render just gave you |
 | `ASSEMBLYAI_API_KEY` | your key |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | your Twilio credentials |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | the REST details of a free Upstash Redis database, so the data survives a deploy |
 
 `MUSTER_PUBLIC_URL` cannot be filled in ahead of time, because Render only settles the address once the service exists. Until it is set, the app runs and the pages work, but phone calls are refused rather than dialled into nowhere, and the server says so at startup.
 

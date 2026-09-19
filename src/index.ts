@@ -65,6 +65,7 @@ import {
   type User,
 } from "./auth";
 import { linkMessage, mailConfigured, sendMail } from "./mail";
+import { flush, restore, snapshotConfigured } from "./snapshot";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const xml = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
@@ -892,16 +893,47 @@ app.ws("/browser/stream", (ws, req) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-startSheetMirror();
-startScheduler();
 
-app.listen(port, () => {
-  console.log(`Muster running on http://localhost:${port}`);
-  // Phone calls fail silently when this is stale, so state it at every start.
-  console.log(
-    publicBase()
-      ? `Phone calls will send Twilio to: ${publicBase()}`
-      : "Phone calls are off: MUSTER_PUBLIC_URL is not set to this server's https address",
-  );
-  console.log(`Talk page: http://localhost:${port}/talk.html`);
+/**
+ * Nothing reads the data directory until the mirror has been restored, so a
+ * host that wipes its filesystem comes back with the accounts and calls intact.
+ */
+async function start() {
+  if (snapshotConfigured()) {
+    const result = await restore();
+    console.log(
+      result.restored
+        ? `Restored ${result.files} files from the saved copy`
+        : `Using the local data directory: ${result.reason}`,
+    );
+  }
+
+  startSheetMirror();
+  startScheduler();
+
+  app.listen(port, () => {
+    console.log(`Muster running on http://localhost:${port}`);
+    // Phone calls fail silently when this is stale, so state it at every start.
+    console.log(
+      publicBase()
+        ? `Phone calls will send Twilio to: ${publicBase()}`
+        : "Phone calls are off: MUSTER_PUBLIC_URL is not set to this server's https address",
+    );
+    console.log(`Talk page: http://localhost:${port}/talk.html`);
+    if (!snapshotConfigured()) {
+      console.log("Data is kept on this machine only. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to survive a host with no disk.");
+    }
+  });
+}
+
+// A host stopping the process is the common case, so write pending changes out.
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    void flush().finally(() => process.exit(0));
+  });
+}
+
+start().catch((e) => {
+  console.error(`Muster could not start: ${e.message}`);
+  process.exit(1);
 });

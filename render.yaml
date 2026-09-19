@@ -17,9 +17,10 @@
 #   The scheduler also recovers on its own: it runs a round it slept through,
 #   as long as calling hours have not ended.
 #
-#   It has no disk, so data/ is wiped on every deploy and restart. Accounts,
-#   crew, bookings and transcripts go with it. MUSTER_OPEN_SIGNUP below lets
-#   the next visitor create an account rather than meeting a locked workspace.
+#   It has no disk, so data/ is wiped on every deploy and restart. Muster
+#   answers that itself: with UPSTASH_REDIS_REST_URL and _TOKEN set, the data
+#   directory is mirrored to a key value store after every write and restored
+#   at boot, so accounts, crew, bookings and transcripts survive.
 #
 # For real use, switch to the paid instance with a disk. The last comment in
 # this file says how.
@@ -48,9 +49,16 @@ services:
         sync: false
       - key: TWILIO_PHONE_NUMBER
         sync: false
-      # A wiped workspace has no accounts, so let a visitor create one.
+      # Keeps the data through a wipe. Without these two, a deploy or restart
+      # loses every account, booking and transcript. Free at upstash.com, no card.
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      # Set to "true" only while showing Muster to people who need their own
+      # account. With the data kept, the first sign up owns the workspace.
       - key: MUSTER_OPEN_SIGNUP
-        value: "true"
+        value: "false"
       # Set these in the dashboard only if you use them:
       #   MUSTER_PHONE_OVERRIDE   ring one verified number while testing
       #   MUSTER_RESEND_KEY       sending confirmation and reset links
