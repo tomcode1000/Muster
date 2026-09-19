@@ -84,13 +84,10 @@
   .watch span { width: 26px; height: 26px; border-radius: 50%; background: #e3e8fb; display: grid; place-items: center; transition: transform .2s ease; }
   .watch span svg { width: 10px; height: 10px; fill: var(--blue); margin-left: 2px; }
   .watch:hover span { transform: scale(1.08); }
-  .proof { display: flex; align-items: center; gap: 16px; margin-top: 32px; }
-  .faces { display: flex; }
-  .faces b { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--bg); margin-left: -8px; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; }
-  .faces b:first-child { margin-left: 0; }
-  .stars { display: flex; gap: 2px; }
-  .stars svg { width: 11px; height: 11px; fill: var(--amber); }
-  .proof small { display: block; margin-top: 5px; font-size: 11px; color: #5a6176; }
+  .proof { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin: 32px 0 0; padding: 0; list-style: none; }
+  .proof li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #5a6176; }
+  .proof li::before { content: ""; width: 15px; height: 15px; flex: none; border-radius: 50%; background: #e3f0e8
+    no-repeat center/9px 9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12l5 5L20 7' stroke='%231f9463' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 
   /* ---------- Visual ---------- */
   .visual { position: relative; height: var(--hero); }
@@ -701,29 +698,19 @@
   <section class="hero">
     <div class="copy">
       <span class="pill rise d1"><i></i>AI Calling Agent</span>
-      <h1 class="rise d2">Your Construction Project, <span class="grad">Handled.</span></h1>
-      <p class="lede rise d3">Muster calls your subcontractors every evening, checks crew size, arrival time, prerequisites, deliveries and blockers. By morning, you get a clear plan with every problem ranked and backed by the foreman's own words.</p>
+      <h1 class="rise d2">Know what goes wrong tomorrow, <span class="grad">before you get to site.</span></h1>
+      <p class="lede rise d3">Muster calls every subcontractor the evening before and confirms crew size, arrival time, prerequisites, deliveries and blockers. By morning you have a ranked list of what needs attention, each item in the foreman's own words.</p>
       <div class="cta rise d4">
         <a class="btn btn-lg" href="signup.html">Start for Free
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a class="watch" href="#how"><span><svg viewBox="0 0 10 12" aria-hidden="true"><path d="M0 0l10 6-10 6z"/></svg></span>See How It Works</a>
       </div>
-      <div class="proof rise d5">
-        <div class="faces" aria-hidden="true">
-          <b style="background:#8a6a55">JR</b><b style="background:#5b6b8c">MT</b><b style="background:#7a5a6e">AL</b><b style="background:#4f6f64">DK</b>
-        </div>
-        <div>
-          <div class="stars" aria-label="Rated 5 out of 5">
-            <svg viewBox="0 0 20 20"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>
-            <svg viewBox="0 0 20 20"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>
-            <svg viewBox="0 0 20 20"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>
-            <svg viewBox="0 0 20 20"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>
-            <svg viewBox="0 0 20 20"><path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9z"/></svg>
-          </div>
-          <small>Trusted by 200+ construction teams</small>
-        </div>
-      </div>
+      <ul class="proof rise d5">
+        <li>English and Spanish calls</li>
+        <li>Every answer quoted</li>
+        <li>Free plan, no card</li>
+      </ul>
     </div>
 
     <div class="visual" aria-label="Muster's Today screen beside the AI calling agent">
@@ -796,7 +783,7 @@
             </div>
 
             <div class="others">
-              <h5>Everyone else</h5>
+              <h5>Ready for tomorrow</h5>
               <div class="row" style="animation-delay:1.35s"><span class="tm">7:00 AM</span><span><b>Elite Concrete</b><small>Slab pour &#183; L1 &#183; 8</small></span><span class="st ok">Confirmed <svg viewBox="0 0 4 6"><path d="M1 1l2 2-2 2"/></svg></span></div>
               <div class="row" style="animation-delay:1.45s"><span class="tm">8:00 AM</span><span><b>Riverside Electric</b><small>Electrical &#183; L2 &#183; 6</small></span><span class="st ok">Confirmed <svg viewBox="0 0 4 6"><path d="M1 1l2 2-2 2"/></svg></span></div>
               <div class="row" style="animation-delay:1.55s"><span class="tm">9:00 AM</span><span><b>Metro Plumbing</b><small>Plumbing &#183; L1 &#183; 4</small></span><span class="st on">On call <svg viewBox="0 0 4 6"><path d="M1 1l2 2-2 2"/></svg></span></div>
@@ -817,18 +804,6 @@
   </section>
 
   <!-- ============================== Logo strip ============================== -->
-  <section class="section logos" aria-label="Contractors using Muster">
-    <span class="pill small reveal"><i></i>Contractors running Muster on active projects</span>
-    <div class="logo-row reveal">
-      <span class="logo"><svg viewBox="0 0 32 36" aria-hidden="true"><path d="M4 34V10l12-7 12 7v24" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M12 34V18h8v16" fill="none" stroke="currentColor" stroke-width="4"/></svg><span>BuildRight</span></span>
-      <span class="logo"><svg viewBox="0 0 52 30" aria-hidden="true"><path d="M2 28L18 6l9 12 6-7 17 17" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M14 12l4-6 5 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg><span class="light">Summit Construction</span></span>
-      <span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M11 25V8h7a5 5 0 010 10h-7M17 18l7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="light">Riverside Builders</span></span>
-      <span class="logo"><svg viewBox="0 0 30 36" aria-hidden="true"><path d="M6 33L10 12M15 33L20 3M24 33l3-12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg><span>Metro Works</span></span>
-      <span class="logo"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M29 6H10a5 5 0 000 10h14a5 5 0 010 10H5" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 12H10M24 22H9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span>SteelCo</span></span>
-      <span class="logo"><svg viewBox="0 0 34 36" aria-hidden="true"><path d="M17 2l13 7.5v15L17 32 4 24.5v-15z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M17 11l6 3.5v7L17 25l-6-3.5v-7z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg><span class="light">Elite Construction</span></span>
-    </div>
-  </section>
-
   <!-- ============================== The evening ============================== -->
   <section class="section" id="evening">
     <div class="glow" style="width:520px;height:520px;right:-160px;top:-40px"></div>
@@ -836,7 +811,7 @@
       <div class="copyside reveal">
         <span class="pill"><i></i>The evening</span>
         <h2>Fifteen calls, and you still find out at <span class="grad">7am.</span></h2>
-        <p class="intro">The schedule says who is working tomorrow. It does not say who is short handed, who is still waiting on a pump truck, or who is not coming at all. That lives in fifteen phone calls, and the calls that matter are the ones nobody had time to make.</p>
+        <p class="intro">The schedule says who is working tomorrow. It does not say who is actually showing up, who is short handed, or who is still waiting on a pump truck. That lives in fifteen phone calls, and the calls that matter are the ones nobody had time to make. <b>Muster makes them.</b></p>
       </div>
 
       <div class="ev-cards">
@@ -1248,7 +1223,7 @@
         </div>
         <div class="trust">
           <i><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.8.9 2.8 2.6 3 5.2"/></svg></i>
-          <div><b>Trusted by teams of all sizes</b><small>From a single site to contractors running several projects, Muster helps teams stay on track.</small></div>
+          <div><b>Built for one site or many</b><small>From a single project to a contractor running several, the evening round works the same way.</small></div>
         </div>
       </div>
 

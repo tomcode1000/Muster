@@ -17,8 +17,9 @@ and still being surprised at 7am. The page has to name that day and show the mor
    transcript line, or a real row from the plan.
 3. **No dashes in copy.** Commas, full stops, colons.
 4. **One icon set:** drawn SVG, one stroke weight, colour inherited. No emoji.
-5. **Social proof stays as designed.** The hero keeps "Trusted by 200+ construction teams"
-   with the four faces, and the page carries a logo strip. Treat both as fixed copy.
+5. **No invented proof.** The hero carries no customer count, star rating or company logos until they are real. What sits there instead is true on the day it is read: the languages, the quotes, the free plan.
+   Earlier drafts carried a customer count, four faces and a logo strip. All of it was
+   removed, because none of it was true.
 6. **Numbers must be defensible.** "Thirty foremen, one evening" is a description. "Saves
    10 hours a week" is a claim, so leave it out until measured.
 
