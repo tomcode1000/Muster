@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { publicBase, publicHost } from "../src/public-url";
 
 function withEnv(env: Record<string, string | undefined>, body: () => void) {
-  const before = { MUSTER_PUBLIC_URL: process.env.MUSTER_PUBLIC_URL, HOSTNAME: process.env.HOSTNAME };
+  const before = {
+    MUSTER_PUBLIC_URL: process.env.MUSTER_PUBLIC_URL,
+    RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL,
+    HOSTNAME: process.env.HOSTNAME,
+  };
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
@@ -25,8 +29,22 @@ test("MUSTER_PUBLIC_URL wins, without its trailing slash", () => {
   });
 });
 
+// Render sets this itself, so a deployment there needs nothing filled in.
+test("the host's own address is used when nothing is set by hand", () => {
+  withEnv({ MUSTER_PUBLIC_URL: undefined, RENDER_EXTERNAL_URL: "https://muster-dycw.onrender.com", HOSTNAME: "srv-d1abc2de3f4g" }, () => {
+    assert.equal(publicBase(), "https://muster-dycw.onrender.com");
+    assert.equal(publicHost(), "muster-dycw.onrender.com");
+  });
+});
+
+test("a custom domain still wins over the host's own address", () => {
+  withEnv({ MUSTER_PUBLIC_URL: "https://muster.app", RENDER_EXTERNAL_URL: "https://muster-dycw.onrender.com", HOSTNAME: undefined }, () => {
+    assert.equal(publicBase(), "https://muster.app");
+  });
+});
+
 test("HOSTNAME is still read when it holds a real address", () => {
-  withEnv({ MUSTER_PUBLIC_URL: undefined, HOSTNAME: "https://abc123.trycloudflare.com" }, () => {
+  withEnv({ MUSTER_PUBLIC_URL: undefined, RENDER_EXTERNAL_URL: undefined, HOSTNAME: "https://abc123.trycloudflare.com" }, () => {
     assert.equal(publicBase(), "https://abc123.trycloudflare.com");
   });
 });
@@ -35,14 +53,14 @@ test("HOSTNAME is still read when it holds a real address", () => {
 // would dial calls at an address that does not exist, and the failure would be
 // silent, so it counts as unset instead.
 test("a bare container hostname counts as unset", () => {
-  withEnv({ MUSTER_PUBLIC_URL: undefined, HOSTNAME: "srv-d1abc2de3f4g5h6i7j8k" }, () => {
+  withEnv({ MUSTER_PUBLIC_URL: undefined, RENDER_EXTERNAL_URL: undefined, HOSTNAME: "srv-d1abc2de3f4g5h6i7j8k" }, () => {
     assert.equal(publicBase(), "");
     assert.equal(publicHost(), "");
   });
 });
 
 test("nothing set is nothing set", () => {
-  withEnv({ MUSTER_PUBLIC_URL: undefined, HOSTNAME: undefined }, () => {
+  withEnv({ MUSTER_PUBLIC_URL: undefined, RENDER_EXTERNAL_URL: undefined, HOSTNAME: undefined }, () => {
     assert.equal(publicBase(), "");
   });
 });

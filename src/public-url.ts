@@ -11,7 +11,9 @@
  */
 
 export function publicBase(): string {
-  const candidate = (process.env.MUSTER_PUBLIC_URL || process.env.HOSTNAME || "").trim();
+  // Render hands the service its own address, so a deployment there needs no
+  // setting at all. MUSTER_PUBLIC_URL still wins, for a custom domain.
+  const candidate = (process.env.MUSTER_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || process.env.HOSTNAME || "").trim();
   const trimmed = candidate.replace(/\/$/, "");
   return /^https?:\/\//i.test(trimmed) ? trimmed : "";
 }

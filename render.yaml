@@ -42,8 +42,8 @@ services:
     healthCheckPath: /health
     envVars:
       # The address Twilio dials back on, and the one email links point to.
-      # Render only knows it after the first deploy, so set it in the
-      # dashboard to https://<your-service>.onrender.com once it exists.
+      # Render sets RENDER_EXTERNAL_URL itself, which Muster reads, so this is
+      # only needed for a custom domain.
       - key: MUSTER_PUBLIC_URL
         sync: false
       - key: ASSEMBLYAI_API_KEY
