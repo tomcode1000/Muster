@@ -1,0 +1,33 @@
+{
+  "name": "muster",
+  "version": "0.1.0",
+  "description": "Evening check-in calls to every subcontractor foreman booked for tomorrow, with a morning plan checked for conflicts.",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "calls": "ts-node src/campaign.ts",
+    "reset-password": "ts-node src/reset-password.ts",
+    "mail-test": "ts-node src/mail-test.ts",
+    "test": "node --require ts-node/register --test test/findings.test.ts test/tools.test.ts test/roster.test.ts test/workspace.test.ts test/profile.test.ts test/usage.test.ts test/auth.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv-flow": "^4.1.0",
+    "express": "^4.21.0",
+    "express-ws": "^5.0.2",
+    "twilio": "^5.10.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/express-ws": "^3.0.5",
+    "@types/node": "^22.7.4",
+    "@types/ws": "^8.5.12",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  },
+  "overrides": {
+    "axios": "1.18.1"
+  }
+}

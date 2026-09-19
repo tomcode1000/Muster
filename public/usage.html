@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage and limits · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  .meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  .meter-card { padding: 18px; }
+  .meter-card .top { display: flex; align-items: center; gap: 12px; }
+  .meter-card .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .meter-card .ic.blue { background: #e7edfd; color: var(--blue); }
+  .meter-card .ic.green { background: #e3f5eb; color: var(--green); }
+  .meter-card .ic.violet { background: #efe9fd; color: #6d4fd1; }
+  .meter-card b.label { font-size: 12.5px; color: var(--navy); }
+  .amount { margin-top: 14px; font-size: 25px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); }
+  .amount span { font-size: 14px; font-weight: 600; color: #8a90a2; }
+  .track { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .bar { position: relative; flex: 1; height: 7px; border-radius: 6px; background: #edf0f7; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--blue-2); }
+  .bar.green i { background: var(--green); }
+  .bar.violet i { background: #7c5cf0; }
+  .bar.warn i { background: #e0791a; }
+  .bar.full i { background: var(--red); }
+  .track small { font-size: 11px; font-weight: 600; color: #6b7390; }
+  .meter-card .reset { margin: 12px 0 0; font-size: 11px; color: #8a90a2; }
+
+  .lower { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
+  .chart { padding: 18px 20px 14px; }
+  .chart h2, .plan-card h2, .breakdown h2 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--navy); }
+  .chart p, .breakdown p { margin: 4px 0 0; font-size: 11.5px; color: #6b7390; }
+  .bars { display: grid; grid-template-columns: 34px 1fr; gap: 10px; margin-top: 18px; }
+  .yaxis { display: flex; flex-direction: column; justify-content: space-between; height: 150px; font-size: 10px; color: #9aa1b4; text-align: right; }
+  .plot { display: flex; align-items: flex-end; gap: 6px; height: 150px; border-bottom: 1px solid var(--line); }
+  .plot div { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .plot i { display: block; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #6ea2ff, #2f77ff); min-height: 2px; }
+  .xaxis { display: flex; gap: 6px; margin: 8px 0 0 44px; font-size: 9.5px; color: #9aa1b4; }
+  .xaxis span { flex: 1; text-align: center; }
+
+  .plan-card { padding: 18px 20px 20px; }
+  .plan-head { display: flex; align-items: center; gap: 10px; }
+  .plan-tag { padding: 3px 10px; border-radius: 999px; background: #e3ebfd; color: #2150d0; font-size: 10.5px; font-weight: 700; }
+  .price { margin-top: 14px; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); }
+  .price span { font-size: 13px; font-weight: 600; color: #8a90a2; }
+  .plan-card ul { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+  .plan-card li { display: grid; grid-template-columns: 16px 1fr; gap: 10px; font-size: 12px; color: #3b4459; }
+  .plan-card li svg { width: 15px; height: 15px; color: var(--green); }
+
+  .breakdown { padding: 18px 20px 20px; margin-top: 14px; }
+  .cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+  .cell { padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+  .cell .ic { width: 28px; height: 28px; border-radius: 8px; background: #eef2fb; color: #4a5268; display: grid; place-items: center; }
+  .cell b { display: block; margin-top: 10px; font-size: 12px; color: var(--navy); }
+  .cell .v { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--navy); }
+  .cell small { display: block; margin-top: 3px; font-size: 11px; color: #6b7390; }
+
+  .compare { padding: 18px 20px 20px; }
+  .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+  .p { position: relative; padding: 14px 10px 12px; border: 1px solid var(--line); border-radius: 13px; }
+  .p.on { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(47, 91, 234, .08); }
+  .p .mp { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); padding: 3px 10px; border-radius: 999px; background: var(--blue-2); color: #fff; font-size: 9.5px; font-weight: 700; white-space: nowrap; }
+  .p h3 { margin: 0; font-size: 12.5px; color: var(--navy); }
+  .p .amt { margin-top: 5px; font-size: 17px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .p .amt span { font-size: 10px; font-weight: 600; color: #8a90a2; }
+  .p ul { list-style: none; margin: 10px 0 12px; padding: 0; display: grid; gap: 7px; }
+  .p li { display: grid; grid-template-columns: 12px 1fr; gap: 6px; font-size: 10px; line-height: 1.4; color: #4a5268; }
+  .p li svg { width: 11px; height: 11px; color: var(--green); margin-top: 1px; }
+  .p button, .p .badge { width: 100%; height: 30px; border-radius: 8px; font-size: 10.5px; font-weight: 600; display: grid; place-items: center; padding: 0; }
+  .p .badge { border: 1px solid var(--line); color: #6b7390; }
+  .warnbox { display: grid; grid-template-columns: 20px 1fr; gap: 12px; padding: 14px 16px; margin-top: 14px; border-radius: 13px; background: #fdecec; border: 1px solid #f7cfcf; }
+  .warnbox svg { width: 18px; height: 18px; color: var(--red); }
+  .warnbox b { font-size: 12.5px; color: #b3363b; }
+  .warnbox p { margin: 4px 0 12px; font-size: 11.5px; line-height: 1.55; color: #8b4a4a; }
+  .warnbox .btn-line { border-color: #eeb9b9; color: #b3363b; height: 32px; padding: 0 14px; font-size: 11.5px; }
+  @media (max-width: 1100px) { .meters, .cells, .plans { grid-template-columns: 1fr 1fr; } .lower { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) { .meters, .cells, .plans { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content" style="grid-template-columns:minmax(0,1fr) 330px">
+      <div class="main">
+        <a class="back" href="settings.html" id="backLink"></a>
+        <div class="head"><div>
+          <h1>Usage and limits</h1>
+          <p>See what your plan allows, what you have used, and how to get more.</p>
+        </div></div>
+
+        <div class="meters" id="meters"></div>
+
+        <div class="lower">
+          <section class="card chart">
+            <h2>14 day usage history</h2>
+            <p>Call minutes used per day.</p>
+            <div class="bars"><div class="yaxis" id="yaxis"></div><div class="plot" id="plot"></div></div>
+            <div class="xaxis" id="xaxis"></div>
+          </section>
+
+          <section class="card plan-card">
+            <div class="plan-head"><h2>Current plan</h2><span class="plan-tag" id="planName">Free</span></div>
+            <div class="price" id="planPrice"></div>
+            <ul id="planPerks"></ul>
+            <a class="btn-soft" href="#compare" id="changePlan">Change plan</a>
+          </section>
+        </div>
+
+        <section class="card breakdown">
+          <h2>Usage breakdown</h2>
+          <p>Your current usage across the things that cost money.</p>
+          <div class="cells" id="cells"></div>
+        </section>
+      </div>
+
+      <div class="side-col">
+        <section class="card compare" id="compare">
+          <h2>Plan comparison</h2>
+          <div class="plans" id="plans"></div>
+          <div class="note-card"><span data-ic="log"></span><p id="planNote"></p></div>
+        </section>
+        <div id="limitBox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+
+M.mount("usage.html");
+$("backLink").innerHTML = `${M.icon("arrow")}Back to settings`;
+document.querySelectorAll("[data-ic]").forEach((el) => (el.outerHTML = `<span class="ic">${M.icon(el.dataset.ic)}</span>`));
+
+const tone = (used, limit) => (!limit ? "" : used / limit >= 1 ? "full" : used / limit >= 0.8 ? "warn" : "");
+const pct = (used, limit) => (limit ? Math.min(100, Math.round((used / limit) * 100)) : 0);
+
+function meter({ icon, colour, label, used, limit, unlimited, reset }) {
+  const p = unlimited ? 0 : pct(used, limit);
+  return `
+    <section class="card meter-card">
+      <div class="top"><span class="ic ${colour}">${M.icon(icon)}</span><b class="label">${label}</b></div>
+      <div class="amount">${used}${unlimited ? "" : ` <span>/ ${limit}</span>`}</div>
+      <div class="track"><div class="bar ${colour} ${tone(used, limit)}"><i style="width:${unlimited ? 0 : p}%"></i></div><small>${unlimited ? "No limit" : `${p}%`}</small></div>
+      <p class="reset">${reset}</p>
+    </section>`;
+}
+
+function drawChart(history) {
+  const top = Math.max(10, ...history.map((d) => d.minutes));
+  const round = Math.ceil(top / 10) * 10;
+  $("yaxis").innerHTML = [round, Math.round(round / 2), 0].map((v) => `<span>${v}</span>`).join("");
+  $("plot").innerHTML = history.map((d) => `<div title="${M.esc(d.date)}: ${d.minutes} minutes, ${d.calls} calls"><i style="height:${Math.round((d.minutes / round) * 100)}%"></i></div>`).join("");
+  $("xaxis").innerHTML = history.map((d) => `<span>${M.shortDay(d.date)}</span>`).join("");
+}
+
+function shortPerks(plan) {
+  return [
+    `${plan.minutesPerMonth.toLocaleString()} minutes`,
+    `${plan.callsPerDay} calls a day`,
+    plan.crewLimit === null ? "Unlimited crew" : `${plan.crewLimit} subcontractors`,
+  ];
+}
+
+function planPerks(plan) {
+  return [
+    `${plan.minutesPerMonth.toLocaleString()} call minutes a month`,
+    `${plan.callsPerDay} calls a day`,
+    plan.crewLimit === null ? "Unlimited subcontractors" : `${plan.crewLimit} subcontractors`,
+    "Google Sheets, English and Spanish calls",
+  ];
+}
+
+function render(u) {
+  const unlimitedCrew = u.crew.limit === null;
+  $("meters").innerHTML = [
+    meter({ icon: "phone", colour: "blue", label: "Call minutes this month", used: u.minutes.used, limit: u.minutes.limit, reset: `Resets on ${M.shortDay(u.period.resetsOn)}` }),
+    meter({ icon: "clock", colour: "green", label: "Calls today", used: u.calls.today, limit: u.calls.limit, reset: "Resets at midnight" }),
+    meter({ icon: "crew", colour: "violet", label: "Subcontractors", used: u.crew.count, limit: u.crew.limit ?? 0, unlimited: unlimitedCrew, reset: unlimitedCrew ? "No limit on this plan" : "Counted from your crew list" }),
+  ].join("");
+
+  drawChart(u.history);
+
+  const current = u.plans.find((p) => p.id === u.currentPlanId) ?? u.plan;
+  $("planName").textContent = current.name;
+  $("planPrice").innerHTML = `$${current.price} <span>/ month</span>`;
+  $("planPerks").innerHTML = planPerks(current).map((t) => `<li>${M.icon("check")}<span>${M.esc(t)}</span></li>`).join("");
+
+  $("cells").innerHTML = [
+    ["phone", "Call minutes", `${u.minutes.used} / ${u.minutes.limit}`, `${pct(u.minutes.used, u.minutes.limit)}% used`],
+    ["clock", "Calls today", `${u.calls.today} / ${u.calls.limit}`, `${u.calls.thisMonth} this month`],
+    ["crew", "Subcontractors", unlimitedCrew ? String(u.crew.count) : `${u.crew.count} / ${u.crew.limit}`, unlimitedCrew ? "No limit" : `${pct(u.crew.count, u.crew.limit)}% used`],
+    ["log", "Data source", u.source === "sheet" ? "Google Sheet" : "Entered in Muster", u.source === "sheet" ? "Read before every round" : "Crew and Plan pages"],
+  ].map(([ic, label, value, note]) => `
+    <div class="cell"><span class="ic">${M.icon(ic)}</span><b>${label}</b><div class="v">${M.esc(value)}</div><small>${M.esc(note)}</small></div>`).join("");
+
+  $("plans").innerHTML = u.plans.map((p) => `
+    <div class="p ${p.id === u.currentPlanId ? "on" : ""}">
+      ${p.id === "pro" ? '<span class="mp">Most popular</span>' : ""}
+      <h3>${M.esc(p.name)}</h3>
+      <div class="amt">$${p.price} <span>/ mo</span></div>
+      <ul>${shortPerks(p).map((t) => `<li>${M.icon("check")}<span>${M.esc(t)}</span></li>`).join("")}</ul>
+      ${p.id === u.currentPlanId ? '<span class="badge">Current</span>' : `<button type="button" class="btn-line" data-plan="${p.id}">Choose</button>`}
+    </div>`).join("");
+
+  $("planNote").textContent = "Your plan is set on the server. Changing it here is not connected to payment yet.";
+
+  const near = u.minutes.limit && u.minutes.used / u.minutes.limit >= 0.8;
+  $("limitBox").innerHTML = u.blocked || near ? `
+    <div class="card warnbox">
+      ${M.icon("warn")}
+      <div>
+        <b>${u.blocked ? "Limit reached" : "Close to your limit"}</b>
+        <p>${M.esc(u.blocked || `${u.minutes.used} of ${u.minutes.limit} call minutes used. Calls stop when the limit is reached, and nothing is deleted.`)}</p>
+        <a class="btn-line" href="#compare">See plans</a>
+      </div>
+    </div>` : "";
+}
+
+$("plans").addEventListener("click", (e) => {
+  const button = e.target.closest("[data-plan]");
+  if (button) M.toast("Payment is not connected yet. Set MUSTER_PLAN on the server to change the plan.");
+});
+
+M.api("GET", "/api/usage/detail")
+  .then(render)
+  .catch((ex) => ($("meters").innerHTML = `<div class="card empty">${M.esc(ex.message)}</div>`));
+</script>
+</body>
+</html>

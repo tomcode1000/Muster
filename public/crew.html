@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crew · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  .count-card { display: grid; grid-template-columns: 1fr 20px; align-items: center; }
+  .count-card .ic { width: 42px; height: 42px; border-radius: 50%; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .count-card b { display: block; margin-top: 12px; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; color: var(--navy); }
+  .count-card small { display: block; margin-top: 4px; font-size: 12px; color: #6b7390; }
+  .limit { margin-top: 10px; font-size: 11px; color: #8a90a2; }
+  .limit.full { color: #c93a36; }
+  .up b { display: block; font-size: 11.5px; font-weight: 500; color: #2d3a5c; }
+  .up small { display: block; margin-top: 2px; font-size: 10.5px; color: #8a90a2; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <div class="main">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Crew</div>
+            <h1>Your crew, on the ground.</h1>
+            <p>See your subcontractors, their foremen and how their check-ins went. Track upcoming bookings and the latest result for each.</p>
+          </div>
+          <div class="head-tools">
+            <div class="datebox">
+              <label><span id="dateIcon"></span><span id="dateLabel">Loading</span><input type="date" id="date" aria-label="Choose day"></label>
+              <span class="sep"></span>
+              <button class="step" id="prev" aria-label="Previous day"></button>
+              <button class="step" id="next" aria-label="Next day"></button>
+            </div>
+          </div>
+        </div>
+
+        <section class="card list">
+          <div class="banner" id="sheetBanner" hidden></div>
+          <div class="toolbar">
+            <button class="primary" id="add"></button>
+            <div class="chips crew-chips" id="chips" role="group" aria-label="Filter by last check-in"></div>
+          </div>
+          <div class="bulk" id="bulk" hidden><span id="bulkCount"></span><span class="spacer"></span><button id="bulkDelete" class="danger">Remove selected</button><button id="bulkClear">Clear</button></div>
+          <div class="table-wrap">
+            <table class="grid crew-grid">
+              <thead><tr>
+                <th style="width:34px"><input type="checkbox" class="cb" id="all" aria-label="Select all"></th>
+                <th>Subcontractor</th><th>Foreman</th><th>Phone</th><th>Language</th><th>Bookings</th><th>Last check-in</th><th style="width:40px"></th>
+              </tr></thead>
+              <tbody id="rows"><tr><td colspan="8" class="empty">Loading.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="foot"><span id="showing"></span><div class="pager" id="pager"></div></div>
+        </section>
+      </div>
+
+      <div class="side-col">
+        <a class="card sc count-card" href="#" id="countCard">
+          <span><span class="ic" id="icCrew"></span><b id="cTotal">0 crew members</b><small id="cAttn">0 need attention</small><span class="limit" id="cLimit"></span></span>
+          <span id="icChev"></span>
+        </a>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" id="icChart"></span><b>Quick summary</b></div>
+          <div id="qs" style="margin-top:8px"></div>
+          <a class="more" href="#" id="viewAll">View all crew members <span id="icMore"></span></a>
+        </section>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" id="icHelp"></span><b>Need help?</b></div>
+          <p>Get quick support or check our guide for common questions.</p>
+          <a class="btn-soft" href="index.html#faq">Open help center <span id="icMore2"></span></a>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="drawerRoot"></div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+const PAGE = 8;
+let state = { date: null, tomorrow: null, overview: null, day: null, usage: null, filter: "all", query: "", page: 1, selected: new Set() };
+
+M.mount("crew.html", { onSearch: (q) => { state.query = q; state.page = 1; draw(); } });
+$("dateIcon").innerHTML = M.icon("plan", 'style="width:17px;height:17px"');
+$("prev").innerHTML = M.icon("chevLeft", 'style="width:15px;height:15px"');
+$("next").innerHTML = M.icon("chevRight", 'style="width:15px;height:15px"');
+$("add").innerHTML = `${M.icon("plus")} Add subcontractor`;
+$("icCrew").innerHTML = M.icon("crew", 'style="width:20px;height:20px"');
+$("icChev").innerHTML = M.icon("chevRight", 'style="width:16px;height:16px;color:#3b4459"');
+$("icChart").innerHTML = M.icon("chart", 'style="stroke-width:2.4"');
+$("icMore").innerHTML = M.icon("arrow", 'style="width:13px;height:13px"');
+$("icHelp").innerHTML = M.icon("phone");
+$("icMore2").innerHTML = M.icon("arrow", 'style="width:14px;height:14px"');
+
+const isSheet = () => state.overview?.source === "sheet";
+
+async function load(date) {
+  try {
+    const q = date ? `?date=${date}` : "";
+    const [overview, day, usage] = await Promise.all([
+      M.api("GET", `/api/crew/overview${q}`),
+      M.api("GET", `/api/day${q}`),
+      M.api("GET", "/api/usage").catch(() => null),
+    ]);
+    if (day.setupGaps?.length) { location.href = "onboarding.html"; return; }
+    if (state.date !== overview.date) state.selected.clear();
+    state.overview = overview;
+    state.day = day;
+    state.usage = usage;
+    state.date = overview.date;
+    state.tomorrow = day.tomorrow;
+    history.replaceState(null, "", `?date=${state.date}`);
+    drawHeader();
+    draw();
+  } catch (ex) {
+    $("rows").innerHTML = `<tr><td colspan="8" class="empty">${M.esc(ex.message)}</td></tr>`;
+  }
+}
+
+function drawHeader() {
+  $("dateLabel").textContent = M.fmtDay(state.date);
+  $("date").value = state.date;
+  $("prev").disabled = $("next").disabled = $("date").disabled = isSheet();
+  const full = state.usage && state.usage.crew.limit !== null && state.usage.crew.count >= state.usage.crew.limit;
+  $("add").disabled = isSheet() || full;
+  $("add").title = full ? `The ${state.usage.plan.name} plan covers up to ${state.usage.crew.limit} subcontractors.` : "";
+  $("sheetBanner").hidden = !isSheet();
+  if (isSheet()) $("sheetBanner").innerHTML = `${M.icon("list", 'style="width:16px;height:16px"')}<span>Your crew comes from the Crew tab of your Google Sheet. Edit it there.</span>`;
+}
+
+function rows() {
+  const findingKey = (f) => `${f.code}:${f.activityIds.join(",")}`;
+  const handled = state.day.handled || [];
+  const flaggedContacts = new Set(
+    state.day.findings.filter((f) => !handled.includes(findingKey(f)))
+      .flatMap((f) => f.activityIds)
+      .map((id) => state.day.project.activities.find((a) => a.id === id)?.contactId)
+      .filter(Boolean),
+  );
+  return state.overview.crew.map((r) => {
+    const [cls, label] = M.statusOf(r.lastCheckIn, false);
+    return { ...r, cls, label, flagged: flaggedContacts.has(r.contact.id) };
+  });
+}
+
+function draw() {
+  const all = rows();
+  const counts = all.reduce((m, r) => ((m[r.cls] = (m[r.cls] || 0) + 1), m), {});
+  const ORDER = [["confirmed", "Confirmed", "check"], ["oncall", "On call", "clock"], ["notcoming", "Not coming", "x"], ["noanswer", "No answer", "phone"], ["notcalled", "Not called", "clock"]];
+  if (state.filter !== "all" && !counts[state.filter]) state.filter = "all";
+  $("chips").innerHTML = [`<button class="chip all ${state.filter === "all" ? "on" : ""}" data-f="all" aria-pressed="${state.filter === "all"}">All (${all.length})</button>`]
+    .concat(ORDER.map(([k, label, ic]) => `<button class="chip ${k} ${state.filter === k ? "on" : ""}" data-f="${k}" aria-pressed="${state.filter === k}" ${counts[k] ? "" : "disabled"}>${M.icon(ic)} ${label} (${counts[k] || 0})</button>`))
+    .join("");
+
+  const q = state.query;
+  const filtered = all.filter((r) => (state.filter === "all" || r.cls === state.filter) &&
+    (!q || [r.contact.company, r.contact.foreman, r.contact.trade, r.contact.phone].join(" ").toLowerCase().includes(q)));
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
+  state.page = Math.min(state.page, pages);
+  const slice = filtered.slice((state.page - 1) * PAGE, state.page * PAGE);
+  const dayLabel = state.date === state.tomorrow ? "tomorrow" : `on ${M.shortDay(state.date)}`;
+
+  if (!all.length) {
+    $("rows").innerHTML = `<tr><td colspan="8" class="empty">${isSheet() ? "The Crew tab has no subcontractors." : `No subcontractors yet. <button class="link" data-act="new">Add the first one</button>.`}</td></tr>`;
+  } else if (!slice.length) {
+    $("rows").innerHTML = `<tr><td colspan="8" class="empty">No subcontractors match.</td></tr>`;
+  } else {
+    $("rows").innerHTML = slice.map((r) => {
+      const c = r.contact;
+      const ci = r.lastCheckIn;
+      const when = ci && r.cls !== "notcalled"
+        ? `${r.lastDate && r.lastDate !== state.date ? `${M.shortDay(r.lastDate)}, ` : ""}${M.timeOf(ci.updatedAt)}`
+        : "";
+      const lastCall = ci?.callIds?.at(-1);
+      return `<tr data-id="${M.esc(c.id)}">
+        <td><input type="checkbox" class="cb" data-sel ${state.selected.has(c.id) ? "checked" : ""} aria-label="Select ${M.esc(c.company)}" ${isSheet() ? "disabled" : ""}></td>
+        <td><span class="who"><span class="av">${M.esc(M.initials(c.company))}${r.flagged ? `<i class="dot-warn" title="Needs attention"></i>` : ""}</span><span><span class="t1" title="${M.esc(c.company)}">${M.esc(c.company)}</span><span class="t2">${M.esc(c.trade)}</span></span></span></td>
+        <td style="color:#2d3a5c">${M.esc(c.foreman)}</td>
+        <td class="nowrap"><a class="phone" href="tel:${M.esc(c.phone)}">${M.icon("phone")}${M.esc(c.phone)}</a></td>
+        <td class="nowrap"><span class="lang"><b>${c.language === "es" ? "ES" : "EN"}</b>${c.language === "es" ? "Spanish" : "English"}</span></td>
+        <td class="up nowrap"><b>${r.onDate} ${dayLabel}</b><small>${r.upcoming} upcoming</small></td>
+        <td>${M.pill(r.cls, r.label, when)}</td>
+        <td><div style="position:relative" data-menu>
+          <button class="icon-btn plain" data-act="menu" aria-label="More actions" aria-haspopup="true">${M.icon("dots")}</button>
+          <div class="menu" hidden>
+            ${isSheet() ? "" : `<button data-act="edit">Edit details</button>`}
+            <a href="plan.html?date=${state.date}&add=1">Book on ${M.shortDay(state.date)}</a>
+            ${lastCall ? `<a href="calls.html?id=${M.esc(lastCall)}">Open last call</a>` : ""}
+            ${isSheet() ? "" : `<button data-act="delete" class="danger">Remove</button>`}
+          </div>
+        </div></td>
+      </tr>`;
+    }).join("");
+  }
+
+  $("showing").textContent = filtered.length ? `Showing ${(state.page - 1) * PAGE + 1} to ${(state.page - 1) * PAGE + slice.length} of ${filtered.length} ${filtered.length === 1 ? "subcontractor" : "subcontractors"}` : "";
+  $("pager").innerHTML = pages > 1
+    ? `<button data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""} aria-label="Previous page">${M.icon("chevLeft", 'style="width:13px;height:13px"')}</button>` +
+      Array.from({ length: pages }, (_, i) => `<button data-page="${i + 1}" class="${state.page === i + 1 ? "on" : ""}">${i + 1}</button>`).join("") +
+      `<button data-page="${state.page + 1}" ${state.page === pages ? "disabled" : ""} aria-label="Next page">${M.icon("chevRight", 'style="width:13px;height:13px"')}</button>`
+    : "";
+
+  $("all").checked = slice.length > 0 && slice.every((r) => state.selected.has(r.contact.id));
+  $("all").disabled = isSheet();
+  $("bulk").hidden = state.selected.size === 0;
+  $("bulkCount").textContent = `${state.selected.size} selected`;
+
+  const attention = all.filter((r) => r.flagged).length;
+  $("cTotal").textContent = `${all.length} crew ${all.length === 1 ? "member" : "members"}`;
+  $("cAttn").textContent = `${attention} ${attention === 1 ? "needs" : "need"} attention`;
+  const u = state.usage;
+  if (u && u.crew.limit !== null && !isSheet()) {
+    $("cLimit").textContent = `${u.crew.count} of ${u.crew.limit} on the ${u.plan.name} plan`;
+    $("cLimit").className = `limit ${u.crew.count >= u.crew.limit ? "full" : ""}`;
+  } else $("cLimit").textContent = "";
+  M.setAttentionDot(attention > 0);
+
+  const ICON = {
+    confirmed: '<circle cx="12" cy="12" r="10" fill="#1fb37a"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2"/>',
+    oncall: '<circle cx="12" cy="12" r="10" fill="#1f6bff"/><path d="M12 7v5l3 2" stroke="#fff" stroke-width="2.2"/>',
+    notcoming: '<circle cx="12" cy="12" r="10" fill="#e0433f"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#fff" stroke-width="2.2"/>',
+    noanswer: '<circle cx="12" cy="12" r="8" stroke="#2d3a5c" stroke-width="2.6"/>',
+    notcalled: '<circle cx="12" cy="12" r="8" stroke="#9aa3b8" stroke-width="2.2"/>',
+  };
+  $("qs").innerHTML = ORDER.map(([k, label]) => `<button class="qs-row" data-f="${k}" style="width:100%;border:0;border-bottom:1px solid #f2f3f7;background:none;text-align:left"><svg viewBox="0 0 24 24" style="width:20px;height:20px" fill="none">${ICON[k]}</svg><span>${label}</span><b>${counts[k] || 0}</b></button>`).join("");
+}
+
+// ---------------------------------------------------------------- Drawer
+function openDrawer(existing) {
+  if (isSheet()) return;
+  const c = existing || { company: "", trade: "", foreman: "", phone: "", language: "en" };
+  const u = state.usage;
+  $("drawerRoot").innerHTML = `
+    <div class="scrim" data-close></div>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+      <div class="drawer-h">
+        <div class="t">${M.icon("crew", 'style="width:24px;height:24px;color:#0e1733"')}<h2 id="dTitle">${existing ? "Edit subcontractor" : "Add subcontractor"}</h2><button class="x" data-close aria-label="Close">${M.icon("x")}</button></div>
+        <p>Muster calls the foreman you add here, in the language they speak.${u && u.crew.limit !== null && !existing ? ` You have ${Math.max(0, u.crew.limit - u.crew.count)} of ${u.crew.limit} places left on the ${M.esc(u.plan.name)} plan.` : ""}</p>
+      </div>
+      <form class="drawer-b" id="dForm" novalidate>
+        <div class="f"><label for="dCompany">1. Company</label><div class="ctl">${M.icon("building")}<input id="dCompany" maxlength="200" placeholder="e.g. Gulf Coast Concrete" value="${M.esc(c.company)}"></div></div>
+        <div class="f"><label for="dTrade">2. Trade</label><div class="ctl">${M.icon("work")}<input id="dTrade" maxlength="200" placeholder="e.g. Concrete" value="${M.esc(c.trade)}"></div></div>
+        <div class="f"><label for="dForeman">3. Foreman</label><div class="ctl">${M.icon("user")}<input id="dForeman" maxlength="200" placeholder="The person Muster calls" value="${M.esc(c.foreman)}"></div></div>
+        <div class="f"><label for="dPhone">4. Foreman's phone</label><div class="ctl">${M.icon("phone")}<input id="dPhone" inputmode="tel" placeholder="+1 504 555 0187" value="${M.esc(c.phone)}"></div>
+          <p style="margin:6px 0 0;font-size:10.5px;color:#8a90a2">Include the country code.</p></div>
+        <div class="f"><label for="dLang">5. Speaks</label><div class="ctl">${M.icon("globe")}<select id="dLang"><option value="en" ${c.language === "en" ? "selected" : ""}>English</option><option value="es" ${c.language === "es" ? "selected" : ""}>Spanish</option></select>${M.icon("chevDown", 'class="chev"')}</div></div>
+        <div id="dErrors"></div>
+      </form>
+      <div class="drawer-f">
+        <button class="btn-primary" id="dSave" form="dForm" type="submit">${existing ? "Save changes" : "Add to crew"}</button>
+        <button class="btn-line" data-close type="button">Cancel</button>
+      </div>
+    </aside>`;
+  const root = $("drawerRoot");
+  const close = () => { root.innerHTML = ""; document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  root.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", close));
+  $("dCompany").focus();
+  $("dForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const body = { company: $("dCompany").value, trade: $("dTrade").value, foreman: $("dForeman").value, phone: $("dPhone").value, language: $("dLang").value };
+    $("dSave").disabled = true;
+    try {
+      if (existing) await M.api("PUT", `/api/crew/${existing.id}`, body);
+      else await M.api("POST", "/api/crew", body);
+      close();
+      M.toast(existing ? "Details saved." : `${body.company} added to your crew.`);
+      load(state.date);
+    } catch (ex) {
+      $("dErrors").innerHTML = `<div class="errors" role="alert">${ex.errors.map(M.esc).join("<br>")}</div>`;
+      $("dSave").disabled = false;
+    }
+  });
+}
+
+// ---------------------------------------------------------------- Events
+$("add").addEventListener("click", () => openDrawer(null));
+$("prev").addEventListener("click", () => load(M.addDays(state.date, -1)));
+$("next").addEventListener("click", () => load(M.addDays(state.date, 1)));
+$("date").addEventListener("change", () => $("date").value && load($("date").value));
+$("chips").addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c && !c.disabled) { state.filter = c.dataset.f; state.page = 1; draw(); } });
+$("qs").addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c) { state.filter = c.dataset.f; state.page = 1; draw(); } });
+$("viewAll").addEventListener("click", (e) => { e.preventDefault(); state.filter = "all"; state.query = ""; draw(); });
+$("countCard").addEventListener("click", (e) => { e.preventDefault(); state.filter = "all"; draw(); });
+$("pager").addEventListener("click", (e) => { const p = e.target.closest("[data-page]"); if (p && !p.disabled) { state.page = Number(p.dataset.page); draw(); } });
+$("all").addEventListener("change", () => {
+  document.querySelectorAll("#rows tr[data-id]").forEach((tr) => { $("all").checked ? state.selected.add(tr.dataset.id) : state.selected.delete(tr.dataset.id); });
+  draw();
+});
+$("bulkClear").addEventListener("click", () => { state.selected.clear(); draw(); });
+$("bulkDelete").addEventListener("click", async () => {
+  const n = state.selected.size;
+  if (!confirm(`Remove ${n} ${n === 1 ? "subcontractor" : "subcontractors"} from your crew?`)) return;
+  const failed = [];
+  for (const id of state.selected) {
+    try { await M.api("DELETE", `/api/crew/${id}`); } catch (ex) { failed.push(ex.message); }
+  }
+  M.toast(failed.length ? `${n - failed.length} removed. ${failed[0]}` : `${n} removed.`);
+  state.selected.clear();
+  load(state.date);
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.closest('[data-act="new"]')) return openDrawer(null);
+  const tr = e.target.closest("tr[data-id]");
+  if (!tr) return;
+  const id = tr.dataset.id;
+  if (e.target.matches("[data-sel]")) { e.target.checked ? state.selected.add(id) : state.selected.delete(id); draw(); return; }
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const row = state.overview.crew.find((r) => r.contact.id === id);
+  try {
+    if (btn.dataset.act === "menu") { const m = btn.nextElementSibling; m.hidden = !m.hidden; return; }
+    if (btn.dataset.act === "edit") return openDrawer(row.contact);
+    if (btn.dataset.act === "delete") {
+      if (!confirm(`Remove ${row.contact.company} from your crew?`)) return;
+      await M.api("DELETE", `/api/crew/${id}`);
+      M.toast(`${row.contact.company} removed.`);
+      load(state.date);
+    }
+  } catch (ex) {
+    M.toast(ex.message);
+  }
+});
+
+load(new URLSearchParams(location.search).get("date") || undefined);
+setInterval(() => { if (!$("drawerRoot").children.length && state.date) load(state.date); }, 30000);
+</script>
+</body>
+</html>

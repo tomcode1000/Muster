@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calls · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  tr.row { cursor: pointer; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--blue); }
+  .back svg { width: 14px; height: 14px; }
+  .convo { padding: 18px 20px; }
+  .turns { display: grid; gap: 10px; margin-top: 14px; }
+  .turn { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 12.5px; line-height: 1.55; }
+  .turn small { display: block; margin-bottom: 3px; font-size: 10.5px; font-weight: 600; opacity: .75; }
+  .turn.agent { justify-self: start; background: #f1f4fb; color: var(--ink); border-top-left-radius: 4px; }
+  .turn.foreman { justify-self: end; background: #e3ebfd; color: #1d3a8f; border-top-right-radius: 4px; }
+  .facts { padding: 18px 20px; }
+  .fact { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; padding: 11px 0; border-top: 1px solid #f1f3f8; }
+  .fact:first-of-type { border-top: 0; }
+  .fact .ic { width: 28px; height: 28px; border-radius: 50%; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .fact .ic svg { width: 14px; height: 14px; }
+  .fact b { display: block; font-size: 12.5px; color: var(--navy); }
+  .fact small { display: block; margin-top: 2px; font-size: 11.5px; color: #4a5268; line-height: 1.5; }
+  .fact .why { color: #b3363b; }
+  .tag { padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+  .tag.ok { background: #e2f5ea; color: var(--green); }
+  .tag.no { background: #fde3e3; color: #c93a36; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin-top: 14px; font-size: 12px; }
+  .kv span { color: #6b7390; }
+  .kv b { color: var(--navy); font-weight: 600; text-align: right; }
+  .title-row { display: flex; align-items: center; gap: 14px; }
+  .title-row .av { width: 44px; height: 44px; border-radius: 50%; background: #e9eefb; color: #3450b8; font-weight: 700; display: grid; place-items: center; }
+  .round { padding: 20px 22px; margin-bottom: 16px; }
+  .round-top { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 22px; align-items: center; }
+  .dial { position: relative; width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .dial span { width: 66px; height: 66px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; color: var(--navy); }
+  .dial small { display: block; font-size: 10px; font-weight: 600; color: #6b7390; }
+  .rstat { display: grid; grid-template-columns: 30px 1fr; gap: 11px; align-items: start; }
+  .rstat .ic { width: 30px; height: 30px; border-radius: 9px; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .rstat .ic svg { width: 15px; height: 15px; }
+  .rstat b { display: block; font-size: 13px; color: var(--navy); }
+  .rstat small { display: block; margin-top: 2px; font-size: 11.5px; color: #6b7390; }
+  .round-btns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; margin-top: 18px; }
+  .round-btns button { height: 44px; border-radius: 11px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .log { margin-top: 14px; max-height: 190px; overflow: auto; border-radius: 10px; background: #f6f8fc; padding: 10px 12px; font: 11px/1.7 ui-monospace, Consolas, monospace; color: #2d3a5c; overflow-wrap: anywhere; }
+  .log time { color: #8a90a2; margin-right: 8px; }
+  @media (max-width: 1000px) { .round-top { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content" id="view"></div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const view = document.getElementById("view");
+const ENDED = {
+  finished: ["confirmed", "Finished"],
+  hung_up: ["noanswer", "Hung up"],
+  time_limit: ["noanswer", "Time limit"],
+  usage_limit: ["notcoming", "Minutes used up"],
+  agent_disconnected: ["notcoming", "Dropped"],
+};
+let calls = [];
+let filter = "all";
+let query = "";
+
+const outcome = (c) => (c.endedAt ? ENDED[c.endReason] || ["notcalled", "Ended"] : ["oncall", "In progress"]);
+const dateTime = (iso) => { const d = new Date(iso); return `${M.shortDay(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)}, ${M.timeOf(iso)}`; };
+const duration = (a, b) => {
+  const s = Math.max(0, Math.round(((b ? new Date(b) : new Date()) - new Date(a)) / 1000));
+  return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+};
+
+M.mount("calls.html", { onSearch: (q) => { query = q; if (!new URLSearchParams(location.search).get("id")) drawList(); } });
+
+// ---------------------------------------------------------------- List
+async function list() {
+  try {
+    calls = await M.api("GET", "/api/calls");
+    drawList();
+  } catch (ex) {
+    view.innerHTML = `<div class="main"><div class="card empty">${M.esc(ex.message)}</div></div>`;
+  }
+}
+
+function drawList() {
+  const counts = calls.reduce((m, c) => { const k = outcome(c)[1]; m[k] = (m[k] || 0) + 1; return m; }, {});
+  const shown = calls.filter((c) => (filter === "all" || outcome(c)[1] === filter) &&
+    (!query || [c.company, c.foreman, c.work].join(" ").toLowerCase().includes(query)));
+  const minutes = calls.reduce((s, c) => s + Math.max(0, (new Date(c.endedAt || Date.now()) - new Date(c.startedAt)) / 60000), 0);
+
+  view.innerHTML = `
+    <div class="main">
+      <div class="head"><div>
+        <div class="eyebrow">Calls</div>
+        <h1>Every check-in, word for word.</h1>
+        <p>Open a call to read the conversation and every fact Muster recorded from it.</p>
+      </div></div>
+      <section class="card round" id="round">
+        <div class="round-top" id="roundTop"></div>
+        <div class="round-btns">
+          <button type="button" class="btn-primary" id="run">${M.icon("phone")}Call everyone now</button>
+          <button type="button" class="btn-line" id="stop">Stop after this call</button>
+        </div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </section>
+
+      <section class="card list">
+        <div class="toolbar">
+          <a class="primary" href="talk.html">${M.icon("wave")} Try a check-in</a>
+          <div class="chips" role="group" aria-label="Filter by outcome">
+            <button class="chip all ${filter === "all" ? "on" : ""}" data-f="all">All (${calls.length})</button>
+            ${Object.entries(counts).map(([k, n]) => `<button class="chip ${Object.values(ENDED).find(([, l]) => l === k)?.[0] || "oncall"} ${filter === k ? "on" : ""}" data-f="${M.esc(k)}">${M.esc(k)} (${n})</button>`).join("")}
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="grid">
+            <thead><tr><th>Subcontractor</th><th>Work</th><th>When</th><th>Length</th><th>Channel</th><th>Outcome</th><th></th></tr></thead>
+            <tbody>${shown.length ? shown.map((c) => {
+              const [cls, label] = outcome(c);
+              return `<tr class="row" data-id="${M.esc(c.callId)}" tabindex="0">
+                <td><span class="who"><span class="av">${M.esc(M.initials(c.company))}</span><span><span class="t1">${M.esc(c.company)}</span><span class="t2">${M.esc(c.foreman)}</span></span></span></td>
+                <td style="color:#2d3a5c">${M.esc(c.work)}</td>
+                <td class="nowrap">${dateTime(c.startedAt)}</td>
+                <td class="nowrap">${duration(c.startedAt, c.endedAt)}</td>
+                <td>${c.channel === "phone" ? "Phone" : "Browser"}</td>
+                <td>${M.pill(cls, label)}</td>
+                <td>${M.icon("chevRight", 'style="width:14px;height:14px;color:#6b7390"')}</td>
+              </tr>`;
+            }).join("") : `<tr><td colspan="7" class="empty">${calls.length ? "No calls match." : `No calls yet. <a href="talk.html">Try a check-in</a> to hear one.`}</td></tr>`}</tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="side-col">
+      <section class="card sc">
+        <div class="sc-h"><span class="ic">${M.icon("phone")}</span><b>At a glance</b></div>
+        <div class="nums">
+          <div><b style="color:#0e1733">${calls.length}</b><small>Calls</small></div>
+          <div><b style="color:#1f9463">${counts.Finished || 0}</b><small>Finished</small></div>
+          <div><b style="color:#2150d0">${Math.round(minutes)}</b><small>Minutes</small></div>
+        </div>
+        <a class="more" href="settings.html">Usage and limits ${M.icon("arrow", 'style="width:13px;height:13px"')}</a>
+      </section>
+    </div>`;
+}
+
+function dial(done, total) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return `<div class="dial" style="background:conic-gradient(var(--blue-2) ${pct}%, #e8ecf6 0)"><span>${done}/${total}<small>called</small></span></div>`;
+}
+
+function drawRound(state, day, settings) {
+  const top = document.getElementById("roundTop");
+  if (!top) return;
+  const activities = day?.project?.activities ?? [];
+  const checkIns = new Map((day?.checkIns ?? []).map((c) => [c.activityId, c]));
+  const contacts = new Map((day?.project?.contacts ?? []).map((c) => [c.id, c]));
+  const called = activities.filter((a) => { const c = checkIns.get(a.id); return c && (c.callIds?.length || c.status === "complete" || c.status === "unreachable"); }).length;
+  const liveActivity = activities.find((a) => checkIns.get(a.id)?.status === "in_progress");
+  const live = liveActivity ? contacts.get(liveActivity.contactId) : null;
+  const waiting = activities.filter((a) => { const c = checkIns.get(a.id); return !c || (c.status !== "complete" && c.status !== "unreachable"); }).length;
+
+  const next = state.running
+    ? "Running now"
+    : state.retryAt
+      ? `Retries at ${M.timeOf(state.retryAt)}`
+      : settings?.schedule.enabled
+        ? `${M.clock(settings.schedule.time)}`
+        : "Automatic calls are off";
+
+  top.innerHTML = `
+    ${dial(called, activities.length)}
+    <div class="rstat"><span class="ic">${M.icon("clock")}</span><span><b>${M.esc(next)}</b><small>${state.running ? "Calls are going out now" : "Next run"}</small></span></div>
+    <div class="rstat"><span class="ic">${M.icon("phone")}</span><span><b>${live ? M.esc(live.company) : "Nobody on a call"}</b><small>${live ? M.esc(live.foreman) : "Calling now"}</small></span></div>
+    <div class="rstat"><span class="ic">${M.icon("copy")}</span><span><b>${waiting} still open</b><small>Not checked in yet</small></span></div>`;
+
+  document.getElementById("run").disabled = state.running;
+  document.getElementById("stop").disabled = !state.running;
+  document.getElementById("log").innerHTML = state.log.length
+    ? state.log.slice(-40).reverse().map((e) => `<div><time>${M.timeOf(e.at)}</time>${M.esc(e.line)}</div>`).join("")
+    : "Nothing has run yet.";
+}
+
+async function pollRound() {
+  if (new URLSearchParams(location.search).get("id")) return;
+  try {
+    const [state, day, settings] = await Promise.all([
+      M.api("GET", "/api/rounds"),
+      M.api("GET", "/api/day").catch(() => null),
+      M.api("GET", "/api/settings").catch(() => null),
+    ]);
+    drawRound(state, day, settings?.settings);
+  } catch {}
+}
+
+// ---------------------------------------------------------------- Detail
+const TOOL_TEXT = {
+  confirm_attendance: (a) => ["Attendance", a.coming === false ? "Not coming tomorrow." : `Coming${a.crew_size != null ? `, crew of ${a.crew_size}` : ""}${a.arrival_time ? `, arriving ${M.clock(String(a.arrival_time).padStart(5, "0"))}` : ""}.`, "crew"],
+  confirm_requirement: (a) => ["Prerequisite", `${String(a.requirement_id || "").replace(/-/g, " ")}: ${String(a.status || "").replace("_", " ")}${a.note ? `, ${a.note}` : ""}.`, "list"],
+  log_delivery: (a) => ["Delivery", `${a.material || "Material"} from ${a.window_start || "?"}${a.window_end ? ` to ${a.window_end}` : ""}.`, "box"],
+  report_blocker: (a) => ["Blocker", `${a.category ? `${a.category}: ` : ""}${a.description || ""}`, "warn"],
+  request_callback: (a) => ["Call back requested", a.reason || "", "phone"],
+  record_answer: (a) => ["Answer", `${String(a.question_id || "").replace(/_/g, " ")}: ${a.answer || ""}`, "check"],
+  finish_check_in: (a) => ["Summary", a.summary || "Check-in finished.", "log"],
+};
+
+async function detail(id) {
+  let c;
+  try {
+    c = await M.api("GET", `/api/calls/${encodeURIComponent(id)}`);
+  } catch {
+    view.innerHTML = `<div class="main"><a class="back" href="calls.html">${M.icon("chevLeft")} All calls</a><div class="card empty">This call could not be found.</div></div>`;
+    return;
+  }
+  const [cls, label] = outcome(c);
+  const who = c.foreman || "Foreman";
+  view.innerHTML = `
+    <div class="main">
+      <a class="back" href="calls.html">${M.icon("chevLeft")} All calls</a>
+      <div class="head" style="padding-top:4px"><div class="title-row">
+        <span class="av">${M.esc(M.initials(c.company))}</span>
+        <div><div class="eyebrow">Call with ${M.esc(who)}</div><h1 style="margin-top:2px">${M.esc(c.company)}</h1></div>
+      </div></div>
+      <section class="card convo">
+        <div class="sc-h"><span class="ic">${M.icon("wave")}</span><b>Conversation</b></div>
+        <div class="turns">${c.turns.length ? c.turns.map((t) => `<div class="turn ${t.role}"><small>${t.role === "agent" ? "Muster" : M.esc(who)} &#183; ${M.timeOf(t.at)}</small>${M.esc(t.text)}</div>`).join("") : `<p class="empty">Nothing was said on this call.</p>`}</div>
+      </section>
+      <section class="card facts">
+        <div class="sc-h"><span class="ic">${M.icon("log")}</span><b>What was recorded</b></div>
+        <div style="margin-top:8px">${c.toolCalls.length ? c.toolCalls.map((t) => {
+          const [title, text, ic] = (TOOL_TEXT[t.name] || ((a) => [t.name, JSON.stringify(a), "log"]))(t.args || {});
+          const ok = t.result && t.result.ok;
+          return `<div class="fact"><span class="ic">${M.icon(ic)}</span><span><b>${M.esc(title)}</b><small>${M.esc(text)}</small>${ok ? "" : `<small class="why">Not saved: ${M.esc(t.result?.error || "rejected")}. The agent asked again.</small>`}</span><span class="tag ${ok ? "ok" : "no"}">${ok ? "Saved" : "Not saved"}</span></div>`;
+        }).join("") : `<p class="empty">No facts were recorded on this call.</p>`}</div>
+      </section>
+    </div>
+    <div class="side-col">
+      <section class="card sc">
+        <div class="sc-h"><span class="ic">${M.icon("phone")}</span><b>Call details</b></div>
+        <div class="kv">
+          <span>Outcome</span><b>${M.pill(cls, label)}</b>
+          <span>Work</span><b>${M.esc(c.work)}</b>
+          <span>For</span><b>${M.esc(M.fmtDay(c.planDate))}</b>
+          <span>Started</span><b>${dateTime(c.startedAt)}</b>
+          <span>Length</span><b>${duration(c.startedAt, c.endedAt)}</b>
+          <span>Channel</span><b>${c.channel === "phone" ? "Phone call" : "Browser check-in"}</b>
+        </div>
+        <a class="more" href="plan.html?date=${M.esc(c.planDate)}">Open this day's plan ${M.icon("arrow", 'style="width:13px;height:13px"')}</a>
+      </section>
+    </div>`;
+  if (!c.endedAt) setTimeout(() => detail(id), 3000);
+}
+
+view.addEventListener("click", async (e) => {
+  if (e.target.closest("#run")) {
+    try {
+      await M.api("POST", "/api/rounds/run", {});
+      M.toast("Round started. Progress shows above.");
+    } catch (ex) {
+      M.toast(ex.message);
+    }
+    return pollRound();
+  }
+  if (e.target.closest("#stop")) {
+    await M.api("POST", "/api/rounds/stop").catch(() => {});
+    M.toast("The round stops after the current call.");
+    return pollRound();
+  }
+  const chip = e.target.closest("[data-f]");
+  if (chip) { filter = chip.dataset.f; drawList(); pollRound(); return; }
+  const row = e.target.closest("tr.row");
+  if (row) location.href = `calls.html?id=${encodeURIComponent(row.dataset.id)}`;
+});
+view.addEventListener("keydown", (e) => {
+  const row = e.target.closest("tr.row");
+  if (row && e.key === "Enter") location.href = `calls.html?id=${encodeURIComponent(row.dataset.id)}`;
+});
+
+const id = new URLSearchParams(location.search).get("id");
+if (id) {
+  detail(id);
+} else {
+  list().then(pollRound);
+  setInterval(() => { pollRound(); list(); }, 6000);
+}
+</script>
+</body>
+</html>

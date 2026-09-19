@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create your Muster account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="wrap">
+  <div class="bar">
+    <a class="brand" href="index.html" aria-label="Muster home"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</a>
+    <nav class="links" aria-label="Primary"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#how">How It Works</a><a href="index.html#pricing">Pricing</a><a href="index.html#faq">FAQ</a></nav>
+    <div class="auth"><a class="signin" href="signin.html">Sign In</a><a class="btn btn-sm" href="signup.html">Get Started <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </div>
+</header>
+
+<main class="wrap page">
+  <section class="copy">
+    <span class="pill"><i></i>Create account</span>
+    <h1>Get started with<br><span class="grad">Muster.</span></h1>
+    <p class="lede">Create your account in a few simple steps and bring your crew, bookings and evening calls together, all in one place.</p>
+    <div class="points">
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.8.9 2.8 2.6 3 5.2"/></svg></span><div><b>Work better, together</b><small>Every subcontractor and foreman on the same page.</small></div></div>
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span><div><b>Stay organized</b><small>Crew, bookings and calls from one dashboard.</small></div></div>
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Private by default</b><small>Your crew list and call logs stay in your workspace.</small></div></div>
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></span><div><b>Free to get started</b><small>No credit card required. Set up your project in minutes.</small></div></div>
+    </div>
+  </section>
+
+  <form class="panel" id="form" novalidate>
+    <div class="brand"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</div>
+    <h2>Create your account</h2>
+    <p class="sub">Start your first project with Muster today.</p>
+
+    <div class="field">
+      <label for="name">Full name</label>
+      <div class="control"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg><input id="name" autocomplete="name" placeholder="John Doe" required></div>
+    </div>
+    <div class="field">
+      <label for="email">Email address</label>
+      <div class="control"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="email" type="email" autocomplete="email" placeholder="you@company.com" required></div>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="control"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><input id="password" type="password" autocomplete="new-password" placeholder="Create a strong password" required>
+        <button class="end" type="button" id="reveal" aria-label="Show password"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <p class="hint">At least 8 characters.</p>
+    </div>
+    <label class="check" style="margin-top:12px;font-size:12px"><input type="checkbox" id="agree"> I agree to the Terms of Service and Privacy Policy</label>
+    <div class="error" id="error" role="alert"></div>
+    <button class="btn btn-block" type="submit" id="submit" style="margin-top:8px"><span id="submitText">Create account</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <div class="or">or</div>
+    <button class="btn btn-ghost btn-block" type="button" id="google" style="margin-top:0">
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke:none"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6a5.1 5.1 0 01-2.2 3.4v2.8h3.6c2.1-2 3.2-4.9 3.2-8.2z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 010-4.2V7H2.1a11 11 0 000 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 002.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>
+      Continue with Google
+    </button>
+    <p class="foot" id="foot">Already have an account? <a class="link" href="signin.html">Sign in</a></p>
+  </form>
+
+  <section class="art" aria-hidden="true">
+    <div class="halo" style="width:420px;height:420px;left:-40px;top:60px"></div>
+    <div class="note" style="left:4px;top:50px">Join a team<br>that works.<svg viewBox="0 0 34 34" style="margin:2px 0 0 60px"><path d="M4 4c14 0 22 8 24 24M28 28l-7-4M28 28l2-8"/></svg></div>
+    <div class="appwin tilt" style="left:10px;top:140px;width:330px">
+      <div class="side">
+        <div class="brand"><svg viewBox="0 0 32 28"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</div>
+        <div class="nav on"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6h-4v6H5a1 1 0 01-1-1z"/></svg>Today</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>Plan</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/></svg>Crew</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg>Calls</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</div>
+      </div>
+      <div class="main">
+        <h4>Tomorrow's overview</h4>
+        <div class="stat2">
+          <div><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg><b>12</b><small>Booked</small></div>
+          <div><svg class="i" viewBox="0 0 24 24" style="color:#22a06b"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><b>9</b><small>Confirmed</small></div>
+        </div>
+        <div class="act">
+          <h5>Recent check-ins</h5>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Gulf Coast Concrete</b><small>6:14 PM &#183; 1 min</small></span><em class="w">3 of 8</em></div>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Riverside Electric</b><small>6:42 PM &#183; 2 min</small></span><em>Confirmed</em></div>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Metro Plumbing</b><small>6:34 PM &#183; 1 min</small></span><em>Confirmed</em></div>
+        </div>
+      </div>
+    </div>
+    <span class="chip" style="left:150px;top:470px"><span class="b"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7"/></svg></span><span>Your crew<br>is waiting.</span></span>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const say = (text) => ($("error").textContent = text);
+
+  /** Only a path on this site, so a crafted link cannot send someone elsewhere after sign in. */
+  function nextPage(fallback) {
+    const next = params.get("next") || "";
+    return next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : fallback;
+  }
+
+  $("reveal").addEventListener("click", () => {
+    const p = $("password");
+    p.type = p.type === "password" ? "text" : "password";
+    $("reveal").setAttribute("aria-label", p.type === "password" ? "Show password" : "Hide password");
+  });
+  $("google").addEventListener("click", () => say("Google sign up is not connected yet. Use your email and a password."));
+
+  fetch("/api/auth/status").then((r) => r.json()).then((s) => {
+    if (s.user) return location.replace(nextPage("today.html"));
+    if (!s.signupOpen) {
+      say("This workspace already has an owner. Sign in, or ask the owner for access.");
+      $("submit").disabled = true;
+    }
+  }).catch(() => say("Muster is not reachable. Check that the server is running."));
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    say("");
+    const name = $("name").value.trim();
+    const email = $("email").value.trim();
+    const password = $("password").value;
+    if (!name) return say("Enter your full name.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("Enter a valid email address.");
+    if (password.length < 8) return say("Use a password of at least 8 characters.");
+    if (!$("agree").checked) return say("Agree to the terms to continue.");
+
+    $("submit").disabled = true;
+    $("submitText").textContent = "Creating account";
+    try {
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, password, agree: true }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Something went wrong. Try again.");
+      // Confirming the address and setup both come before wherever the person was headed.
+      if (data.next === "verify.html") return location.replace(data.mailSent ? "verify.html" : "verify.html?sent=0");
+      location.replace(data.next === "onboarding.html" ? data.next : nextPage(data.next));
+    } catch (ex) {
+      say(ex.message);
+      $("submit").disabled = false;
+      $("submitText").textContent = "Create account";
+    }
+  });
+</script>
+</body>
+</html>

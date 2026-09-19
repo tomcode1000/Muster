@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<script src="settings-lib.js"></script>
+<style>
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .count { text-align: right; }
+  .test { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  @media (max-width: 860px) { .two, .three { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <form class="main" id="form" novalidate>
+        <div id="pageHead"></div>
+
+        <section class="card set">
+          <div class="set-h"><span class="ic" data-ic="phone"></span><span><b>Call settings</b><small>Which number foremen see, and what happens when nobody picks up.</small></span></div>
+
+          <div class="set-row" style="margin-top:16px">
+            <div><b style="font-size:12.5px;color:var(--navy)">Use your own phone number</b><small style="display:block;margin-top:2px;font-size:11.5px;color:#6b7390">Muster calls from your number instead of the Muster number.</small></div>
+            <label class="switch" style="flex:none"><input type="checkbox" id="useOwn" aria-label="Use your own phone number"><span></span></label>
+          </div>
+
+          <div class="f" id="numberField"><label for="number">Phone number <span class="req">*</span></label>
+            <div class="ctl"><input id="number" placeholder="+1 504 555 0187" autocomplete="tel"></div>
+            <p class="hint">Include the country code. The number must be one you own in Twilio, or one you have verified there as a caller ID.</p>
+          </div>
+          <p class="hint" id="musterNumber"></p>
+          <hr>
+
+          <div class="set-row" style="margin-top:20px">
+            <div class="set-h"><span class="ic" data-ic="log"></span><span><b>Voicemail</b><small>Leave a message when an answering machine picks up.</small></span></div>
+            <label class="switch" style="flex:none"><input type="checkbox" id="voicemail" aria-label="Voicemail"><span></span></label>
+          </div>
+          <div class="f" id="vmField"><label for="vmMessage">Voicemail message</label>
+            <div class="ctl"><textarea id="vmMessage" rows="3" maxlength="300"></textarea></div>
+            <p class="hint count" id="vmCount"></p>
+          </div>
+          <div class="note-card warn"><span data-ic="warn"></span><p>Answering machine detection is a paid Twilio feature. On a trial account the call still goes through, and the round log says the setting was skipped.</p></div>
+        </section>
+
+        <section class="card set">
+          <div class="set-h"><span class="ic" data-ic="clock"></span><span><b>Call timing</b><small>How long Muster waits, and how long a check-in may run.</small></span></div>
+          <div class="three" style="margin-top:14px">
+            <div class="f" style="margin:0"><label for="ring">Ring time</label><div class="ctl"><select id="ring"></select><span data-ic="chevDown" class="chev"></span></div><p class="hint">Time to ring before giving up.</p></div>
+            <div class="f" style="margin:0"><label for="duration">Call duration</label><div class="ctl"><select id="duration"></select><span data-ic="chevDown" class="chev"></span></div><p class="hint">Longest one check-in may run.</p></div>
+            <div class="f" style="margin:0"><span class="lbl">Attempts per foreman</span><div class="ctl" style="padding:0 14px"><span id="attempts" style="font-size:12.5px;color:var(--navy)">.</span></div><p class="hint">Set on the <a href="settings-schedule.html" style="color:var(--blue);font-weight:600">Call times</a> page.</p></div>
+          </div>
+        </section>
+
+        <section class="card set">
+          <div class="test">
+            <div class="set-h"><span class="ic" data-ic="phone"></span><span><b>Test call</b><small>Ring your own phone to hear that the line works, before a round runs.</small></span></div>
+            <button type="button" class="btn-line" id="test">Send test call</button>
+          </div>
+          <div class="f" id="testField"><label for="testTo">Number to call</label><div class="ctl"><input id="testTo" placeholder="+1 504 555 0187" autocomplete="tel"></div>
+            <p class="hint">On a Twilio trial account this must be a number you verified in Twilio. The test call counts towards your plan.</p></div>
+          <p class="hint" id="testState" role="status"></p>
+        </section>
+
+        <div class="form-actions">
+          <span class="msg" id="msg" role="status"></span>
+          <button type="button" class="btn-line" id="cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="save">Save changes</button>
+        </div>
+      </form>
+
+      <div class="side-col">
+        <section class="card sc tips">
+          <div class="sc-h"><span class="ic" data-ic="bulb"></span><b>Phone number tips</b></div>
+          <p>A number foremen recognise is answered far more often than an unknown one.</p>
+          <ul>
+            <li data-check>Use a local number where the crews work</li>
+            <li data-check>Use the same number every evening</li>
+            <li data-check>Keep the voicemail message short</li>
+            <li data-check>Send a test call after any change</li>
+          </ul>
+        </section>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="log"></span><b>Quick info</b></div>
+          <div class="facts">
+            <div><span>Calls are placed</span><b id="qHours">.</b></div>
+            <div><span>Retry gap</span><b id="qRetry">.</b></div>
+            <div><span>Calling number</span><b id="qNumber">.</b></div>
+          </div>
+          <p class="hint" id="qNote"></p>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const S = window.MusterSettings;
+const $ = (id) => document.getElementById(id);
+
+M.mount("settings-phone.html");
+$("pageHead").innerHTML = S.head("settings.html", "Phone", "Set how Muster places calls and which number your foremen see.");
+document.querySelectorAll("[data-ic]").forEach((el) => {
+  el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : `<span class="ic">${M.icon(el.dataset.ic)}</span>`;
+});
+document.querySelectorAll("[data-check]").forEach((li) => (li.innerHTML = `${M.icon("check")}<span>${li.textContent}</span>`));
+
+function collect() {
+  return {
+    useOwnNumber: $("useOwn").checked,
+    number: $("number").value,
+    voicemail: $("voicemail").checked,
+    voicemailMessage: $("vmMessage").value,
+    ringSeconds: Number($("ring").value),
+    maxCallSeconds: Number($("duration").value),
+  };
+}
+
+function showFields() {
+  $("numberField").hidden = !$("useOwn").checked;
+  $("vmField").hidden = !$("voicemail").checked;
+  $("vmCount").textContent = `${$("vmMessage").value.length} of 300`;
+}
+
+function render(s, twilioNumber) {
+  $("useOwn").checked = s.phone.useOwnNumber;
+  $("number").value = s.phone.number;
+  $("voicemail").checked = s.phone.voicemail;
+  $("vmMessage").value = s.phone.voicemailMessage;
+  S.options($("ring"), [5, 10, 15, 20, 25, 30, 45, 60].map((n) => [n, `${n} seconds`]), s.phone.ringSeconds);
+  S.options($("duration"), [[60, "1 minute"], [120, "2 minutes"], [190, "3 minutes"], [300, "5 minutes"], [600, "10 minutes"]], s.phone.maxCallSeconds);
+  $("attempts").textContent = `${s.schedule.maxAttempts} ${s.schedule.maxAttempts === 1 ? "call" : "calls"} a day`;
+  $("musterNumber").textContent = twilioNumber
+    ? `The Muster number on this server is ${twilioNumber}. Calls come from it unless you use your own number.`
+    : "No Twilio number is set on this server yet. Add TWILIO_PHONE_NUMBER to .env to place phone calls.";
+  $("testTo").value = s.phone.useOwnNumber && s.phone.number ? s.phone.number : "";
+
+  $("qHours").textContent = `${M.clock(s.schedule.callingHours.start)} to ${M.clock(s.schedule.callingHours.end)}`;
+  $("qRetry").textContent = `${s.schedule.retryAfterMinutes} minutes`;
+  $("qNumber").textContent = s.phone.useOwnNumber && s.phone.number ? s.phone.number : twilioNumber || "Not set";
+  $("qNote").textContent = "A missed call is retried on the schedule you set, up to the attempts allowed.";
+  showFields();
+}
+
+async function reload() {
+  const { settings, twilioNumber } = await S.load();
+  render(settings, twilioNumber);
+}
+
+["useOwn", "voicemail"].forEach((id) => $(id).addEventListener("change", showFields));
+$("vmMessage").addEventListener("input", showFields);
+$("form").addEventListener("input", () => S.setMessage($("msg"), ""));
+$("cancel").addEventListener("click", reload);
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("save").disabled = true;
+  try {
+    await S.save({ phone: collect() });
+    S.setMessage($("msg"), "Saved.", "ok");
+    reload();
+  } catch (ex) {
+    S.setMessage($("msg"), ex.errors ? ex.errors.join(". ") : ex.message, "bad");
+  } finally {
+    $("save").disabled = false;
+  }
+});
+
+$("test").addEventListener("click", async () => {
+  $("test").disabled = true;
+  $("testState").textContent = "Placing the call.";
+  try {
+    const r = await M.api("POST", "/api/phone/test", { to: $("testTo").value });
+    $("testState").textContent = `Calling ${$("testTo").value} from ${r.from}. Your phone should ring now.`;
+  } catch (ex) {
+    $("testState").textContent = ex.message;
+  } finally {
+    $("test").disabled = false;
+  }
+});
+
+reload().catch((ex) => S.setMessage($("msg"), ex.message, "bad"));
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call times · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<script src="settings-lib.js"></script>
+<style>
+  .days { display: flex; flex-wrap: wrap; gap: 8px; }
+  .days button { display: inline-flex; align-items: center; gap: 7px; min-width: 76px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; color: #6b7390; justify-content: center; }
+  .days button svg { width: 13px; height: 13px; opacity: 0; }
+  .days button[aria-pressed="true"] { background: var(--blue-2); border-color: var(--blue-2); color: #fff; }
+  .days button[aria-pressed="true"] svg { opacity: 1; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .next-run { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: #fbfcfe; }
+  .next-run b { display: block; font-size: 12.5px; color: var(--navy); }
+  .next-run small { display: block; margin-top: 2px; font-size: 11.5px; color: #6b7390; }
+  .next-run .when { text-align: right; font-size: 12px; color: var(--green); font-weight: 600; }
+  .next-run .when small { color: #6b7390; font-weight: 500; }
+  @media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <form class="main" id="form" novalidate>
+        <div id="pageHead"></div>
+
+        <section class="card set">
+          <div class="set-row">
+            <div class="set-h"><span class="ic" data-ic="phone"></span><span><b>Automatic calls</b><small>Let Muster call your foremen on the schedule below.</small></span></div>
+            <label class="switch" style="flex:none"><input type="checkbox" id="enabled" aria-label="Automatic calls"><span></span></label>
+          </div>
+        </section>
+
+        <section class="card set">
+          <div class="set-row">
+            <div class="set-h"><span class="ic" data-ic="clock"></span><span><b>Evening call time</b><small>When calls start each day.</small></span></div>
+            <div class="f" style="margin:0;min-width:200px"><div class="ctl"><input id="time" type="time" aria-label="Evening call time"></div></div>
+          </div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="plan"></span><span><b>Days of the week</b><small>The days Muster should call. Pick the evenings before a working day.</small></span></div>
+          <div class="days" id="days" style="margin-top:14px"></div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="clock"></span><span><b>Calling hours</b><small>No call is placed outside this window.</small></span></div>
+          <div class="two" style="margin-top:12px">
+            <div class="f" style="margin:0"><label for="hStart">Start time</label><div class="ctl"><input id="hStart" type="time"></div></div>
+            <div class="f" style="margin:0"><label for="hEnd">End time</label><div class="ctl"><input id="hEnd" type="time"></div></div>
+          </div>
+          <hr>
+
+          <div class="two" style="margin-top:20px">
+            <div>
+              <div class="set-h"><span class="ic" data-ic="copy"></span><span><b>Retry gap</b><small>How long to wait before trying a foreman again.</small></span></div>
+              <div class="f"><div class="ctl"><select id="retry" aria-label="Retry gap"></select><span data-ic="chevDown" class="chev"></span></div></div>
+            </div>
+            <div>
+              <div class="set-h"><span class="ic" data-ic="phone"></span><span><b>Attempts per foreman</b><small>The most calls one foreman gets in a day.</small></span></div>
+              <div class="f"><div class="ctl"><select id="attempts" aria-label="Attempts per foreman"></select><span data-ic="chevDown" class="chev"></span></div></div>
+            </div>
+          </div>
+
+          <div class="next-run">
+            <div><b>Next run</b><small>When Muster will start calling.</small></div>
+            <div class="when" id="nextRun">Not scheduled<small id="nextRunSub"></small></div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <span class="msg" id="msg" role="status"></span>
+          <button type="button" class="btn-line" id="cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="save">Save changes</button>
+        </div>
+      </form>
+
+      <div class="side-col">
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="clock"></span><b>Call times summary</b></div>
+          <div class="facts">
+            <div><span>Call time</span><b id="sTime">.</b></div>
+            <div><span>Days</span><b id="sDays">.</b></div>
+            <div><span>Calling hours</span><b id="sHours">.</b></div>
+            <div><span>Retry gap</span><b id="sRetry">.</b></div>
+            <div><span>Attempts per foreman</span><b id="sAttempts">.</b></div>
+          </div>
+          <div class="note-card"><span data-ic="log"></span><p id="zoneNote">Calls are placed on your project's clock.</p></div>
+        </section>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="phone"></span><b>Calling round</b></div>
+          <p id="roundState">Loading.</p>
+          <a class="btn-soft" href="calls.html">Open the calling round</a>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const S = window.MusterSettings;
+const $ = (id) => document.getElementById(id);
+const DAY_ORDER = [[1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"]];
+
+M.mount("settings-schedule.html");
+$("pageHead").innerHTML = S.head("settings.html", "Call times", "Set when Muster calls your foremen. Starting a round and watching it run happens on the Calls page.");
+document.querySelectorAll("[data-ic]").forEach((el) => {
+  el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : `<span class="ic">${M.icon(el.dataset.ic)}</span>`;
+});
+
+function collect() {
+  return {
+    enabled: $("enabled").checked,
+    time: $("time").value,
+    days: [...$("days").querySelectorAll('[aria-pressed="true"]')].map((b) => Number(b.dataset.d)),
+    callingHours: { start: $("hStart").value, end: $("hEnd").value },
+    retryAfterMinutes: Number($("retry").value),
+    maxAttempts: Number($("attempts").value),
+  };
+}
+
+function summary() {
+  const s = collect();
+  const days = DAY_ORDER.filter(([d]) => s.days.includes(d)).map(([, n]) => n);
+  $("sTime").textContent = s.enabled ? `${M.clock(s.time)} daily` : "Off";
+  $("sDays").textContent = days.length === 0 ? "None" : days.length === 7 ? "Every day" : days.join(", ");
+  $("sHours").textContent = `${M.clock(s.callingHours.start)} to ${M.clock(s.callingHours.end)}`;
+  $("sRetry").textContent = `${s.retryAfterMinutes} minutes`;
+  $("sAttempts").textContent = String(s.maxAttempts);
+  $("nextRun").firstChild.textContent = s.enabled && days.length ? "Next working day" : "Not scheduled";
+  $("nextRunSub").textContent = s.enabled && days.length ? `${M.clock(s.time)} to ${M.clock(s.callingHours.end)}` : "Automatic calls are off";
+}
+
+function render(s) {
+  $("enabled").checked = s.schedule.enabled;
+  $("time").value = s.schedule.time;
+  $("hStart").value = s.schedule.callingHours.start;
+  $("hEnd").value = s.schedule.callingHours.end;
+  $("days").innerHTML = DAY_ORDER.map(([d, n]) => `<button type="button" data-d="${d}" aria-pressed="${s.schedule.days.includes(d)}">${M.icon("check")}${n}</button>`).join("");
+  S.options($("retry"), [5, 10, 15, 20, 30, 45, 60, 90, 120].map((m) => [m, `${m} minutes`]), s.schedule.retryAfterMinutes);
+  S.options($("attempts"), [1, 2, 3, 4, 5].map((n) => [n, `${n} ${n === 1 ? "attempt" : "attempts"}`]), s.schedule.maxAttempts);
+  $("zoneNote").textContent = `Calls are placed on your project's clock, ${s.project.timezone.replace(/_/g, " ")}.`;
+  summary();
+}
+
+$("days").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-d]");
+  if (!b) return;
+  b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+  summary();
+});
+$("form").addEventListener("input", () => { S.setMessage($("msg"), ""); summary(); });
+$("cancel").addEventListener("click", () => render(S.current()));
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("save").disabled = true;
+  try {
+    await S.save({ schedule: collect() });
+    S.setMessage($("msg"), "Saved.", "ok");
+    pollRound();
+  } catch (ex) {
+    S.setMessage($("msg"), ex.errors ? ex.errors.join(". ") : ex.message, "bad");
+  } finally {
+    $("save").disabled = false;
+  }
+});
+
+async function pollRound() {
+  try {
+    const r = await M.api("GET", "/api/rounds");
+    const s = S.current();
+    const parts = [];
+    if (r.running) parts.push("A round is running now.");
+    else if (r.lastRound?.finishedAt) parts.push(`Last round: ${r.lastRound.summary}.`);
+    if (r.retryAt) parts.push(`Retries at ${M.timeOf(r.retryAt)}.`);
+    else if (s?.schedule.enabled) parts.push(`Runs automatically at ${M.clock(s.schedule.time)}.`);
+    else if (s) parts.push("Automatic calls are off.");
+    $("roundState").textContent = parts.join(" ") || "No rounds yet.";
+  } catch {}
+}
+
+S.load().then(({ settings }) => { render(settings); pollRound(); }).catch((ex) => S.setMessage($("msg"), ex.message, "bad"));
+</script>
+</body>
+</html>

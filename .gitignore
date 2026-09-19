@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+google-service-account*.json
+*.tmp
+data/
+
+# The source photo for the agent cutout. public/images/agent.png is the one the site uses.
+public/images/WhatsApp*.jpeg

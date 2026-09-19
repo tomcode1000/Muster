@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirm your email · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .mark { width: 62px; height: 62px; margin: 0 auto 18px; border-radius: 50%; display: grid; place-items: center; background: #e7edfd; color: #2f5bea; }
+  .mark svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .mark.ok { background: #e3f5eb; color: #1f9463; }
+  .mark.bad { background: #fdeaea; color: #e0433f; }
+  .panel.centre { text-align: center; }
+  .panel.centre h2 { margin-bottom: 6px; }
+  .panel.centre .sub { margin-bottom: 20px; }
+  .addr { display: inline-block; margin: 0 0 20px; padding: 8px 14px; border-radius: 10px; background: #f4f7ff; font-size: 13px; font-weight: 600; color: #2150d0; word-break: break-all; }
+  .steps-note { margin: 18px 0 0; font-size: 12px; line-height: 1.7; color: #6a7185; text-align: left; }
+  .steps-note b { color: #0e1733; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="bar">
+    <a class="brand" href="index.html" aria-label="Muster home"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</a>
+    <div class="auth"><a class="signin" href="signin.html">Sign In</a></div>
+  </div>
+</header>
+
+<main class="wrap page" style="grid-template-columns:1fr;place-items:center;min-height:62vh">
+  <div class="panel centre" id="panel" style="max-width:460px">
+    <div class="mark" id="mark"></div>
+    <h2 id="title">Checking your link</h2>
+    <p class="sub" id="sub">One moment.</p>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const ICON = {
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  check: '<path d="M5 12l5 5L20 7"/>',
+  warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]}</svg>`;
+
+function show({ tone, ic, title, sub, body = "" }) {
+  $("mark").className = `mark ${tone}`;
+  $("mark").innerHTML = icon(ic);
+  $("title").textContent = title;
+  $("sub").innerHTML = sub;
+  const old = document.getElementById("body");
+  if (old) old.remove();
+  if (body) $("panel").insertAdjacentHTML("beforeend", `<div id="body">${body}</div>`);
+}
+
+async function post(url, payload) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload || {}) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Something went wrong. Try again.");
+  return data;
+}
+
+/** Someone clicked the link in their email. */
+async function confirmToken(token) {
+  try {
+    const data = await post("/api/auth/verify", { token });
+    show({
+      tone: "ok",
+      ic: "check",
+      title: "Email confirmed",
+      sub: `You are signed in as ${data.user.email}.`,
+      body: `<a class="btn btn-block" href="${data.next}">Continue to Muster</a>`,
+    });
+    setTimeout(() => location.replace(data.next), 1800);
+  } catch (ex) {
+    show({
+      tone: "bad",
+      ic: "warn",
+      title: "That link did not work",
+      sub: ex.message,
+      body: `<a class="btn btn-block" href="signin.html">Sign in</a><p class="foot">Signing in sends a new confirmation link.</p>`,
+    });
+  }
+}
+
+/** Signed in, but the address is not confirmed yet. */
+function waiting(user, note) {
+  show({
+    tone: "",
+    ic: "mail",
+    title: "Confirm your email",
+    sub: "We sent a link to",
+    body: `
+      <div class="addr">${user.email}</div>
+      <button class="btn btn-block" type="button" id="resend">Send the link again</button>
+      <div class="error" id="msg" role="status">${note || ""}</div>
+      <p class="steps-note"><b>No email?</b> Check your spam folder, and make sure the address above is right. You can also <a class="link" href="signup.html">start again with another address</a>, or <a class="link" href="#" id="out">sign out</a>.</p>`,
+  });
+  $("resend").addEventListener("click", async () => {
+    $("resend").disabled = true;
+    try {
+      const r = await post("/api/auth/verify/resend");
+      $("msg").textContent = r.sent ? "Sent. Check your inbox." : `Could not send: ${r.reason}.`;
+      $("msg").className = r.sent ? "error ok-msg" : "error";
+    } catch (ex) {
+      $("msg").textContent = ex.message;
+    } finally {
+      $("resend").disabled = false;
+    }
+  });
+  $("out").addEventListener("click", async (e) => {
+    e.preventDefault();
+    await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+    location.replace("signin.html");
+  });
+}
+
+(async () => {
+  const token = params.get("token");
+  if (token) return confirmToken(token);
+
+  try {
+    const status = await fetch("/api/auth/status").then((r) => r.json());
+    if (!status.user) {
+      return show({
+        tone: "",
+        ic: "mail",
+        title: "Confirm your email",
+        sub: "Open the link we sent you, or sign in to get a new one.",
+        body: `<a class="btn btn-block" href="signin.html">Sign in</a>`,
+      });
+    }
+    if (status.user.emailVerified) return location.replace("today.html");
+    waiting(status.user, params.get("sent") === "0" ? "The first message could not be sent. Try again below." : "");
+  } catch {
+    show({ tone: "bad", ic: "warn", title: "Muster is not reachable", sub: "Check that the server is running, then reload this page." });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .scard { display: grid; grid-template-columns: 38px 1fr 16px; gap: 14px; align-items: start; padding: 18px; }
+  .scard:hover { border-color: #b9ccfb; box-shadow: 0 14px 30px rgba(20, 28, 70, .07); }
+  .scard .ic { width: 38px; height: 38px; border-radius: 11px; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .scard b { font-size: 13.5px; color: var(--navy); }
+  .scard p { margin: 5px 0 0; font-size: 11.5px; line-height: 1.6; color: #6b7390; }
+  .scard .state { display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 600; color: var(--blue); }
+  .scard .chev { width: 16px; height: 16px; color: #b3bbcd; margin-top: 10px; }
+  .log { margin-top: 12px; max-height: 240px; overflow: auto; border-radius: 10px; background: #f6f8fc; padding: 10px 12px; font: 11px/1.7 ui-monospace, Consolas, monospace; color: #2d3a5c; overflow-wrap: anywhere; }
+  .log time { color: #8a90a2; margin-right: 8px; }
+  .round-btns { display: grid; gap: 8px; margin-top: 14px; }
+  .round-btns button { height: 40px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
+  .meter { margin-top: 12px; }
+  .meter .l { display: flex; justify-content: space-between; font-size: 12px; color: #3b4459; }
+  .meter .l b { color: var(--navy); }
+  .bar { position: relative; height: 7px; margin-top: 7px; border-radius: 6px; background: #edf0f7; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: linear-gradient(90deg, #3a7bff, #1f6bff); }
+  .bar.warn i { background: linear-gradient(90deg, #f0a23a, #e0791a); }
+  .bar.full i { background: linear-gradient(90deg, #ef6461, #e0433f); }
+  .plan-tag { margin-left: auto; padding: 3px 9px; border-radius: 8px; background: #e3ebfd; color: #2150d0; font-size: 10.5px; font-weight: 700; }
+  @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <div class="main">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Settings</div>
+            <h1>Your project, your rules.</h1>
+            <p>What foremen hear, where your crew list lives, and when Muster calls.</p>
+          </div>
+        </div>
+
+        <div class="cards" id="cards"></div>
+
+        <section class="card set" style="margin-top:16px">
+          <div class="set-h"><span class="ic" data-ic="list"></span><span><b>Run setup again</b><small>Walk through project, crew and call times once more, step by step.</small></span></div>
+          <a class="btn-soft" href="onboarding.html" style="max-width:220px">Run setup</a>
+        </section>
+      </div>
+
+      <div class="side-col">
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="phone"></span><b>Calling round</b></div>
+          <p id="roundState">Loading.</p>
+          <a class="btn-soft" href="calls.html">Open the calling round</a>
+        </section>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="chart"></span><b>Usage and limits</b><span class="plan-tag" id="uPlan">Free</span></div>
+          <div class="meter"><div class="l"><span>Call minutes this month</span><b id="uMin"></b></div><div class="bar" id="uMinBar"><i></i></div></div>
+          <div class="meter"><div class="l"><span>Calls today</span><b id="uCalls"></b></div><div class="bar" id="uCallsBar"><i></i></div></div>
+          <div class="meter"><div class="l"><span>Subcontractors</span><b id="uCrew"></b></div><div class="bar" id="uCrewBar"><i></i></div></div>
+          <p class="hint" id="uNote"></p>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+let settings = null;
+
+M.mount("settings.html");
+document.querySelectorAll("[data-ic]").forEach((el) => (el.outerHTML = `<span class="ic">${M.icon(el.dataset.ic)}</span>`));
+
+const SECTIONS = [
+  ["settings-project.html", "building", "Project", "Project name, your name, time zone and the site words the agent listens for.", (s) => s.project.name || "No project name yet"],
+  ["settings-agent.html", "wave", "Agent", "Opening words in English and Spanish, extra instructions and your own questions.", (s) => `${s.agent.questions.length} extra ${s.agent.questions.length === 1 ? "question" : "questions"}`],
+  ["settings-schedule.html", "clock", "Call times", "When the evening round runs, which days, and how often a missed foreman is retried.", (s) => (s.schedule.enabled ? `Runs at ${M.clock(s.schedule.time)}` : "Automatic calls are off")],
+  ["settings-source.html", "log", "Data source", "Enter crew and bookings in Muster, or read them from a Google Sheet.", (s) => (s.source === "sheet" ? "Google Sheet" : "Entered in Muster")],
+  ["settings-phone.html", "phone", "Phone", "The number foremen see, voicemail, ring time and the longest a check-in may run.", (s) => (s.phone.useOwnNumber && s.phone.number ? s.phone.number : "Muster number")],
+];
+
+function cards(s) {
+  $("cards").innerHTML = SECTIONS.map(([href, ic, title, text, state]) => `
+    <a class="card scard" href="${href}">
+      <span class="ic">${M.icon(ic)}</span>
+      <span><b>${title}</b><p>${text}</p><span class="state">${M.esc(state(s))}</span></span>
+      ${M.icon("chevRight", 'class="chev"')}
+    </a>`).join("");
+}
+
+async function loadSettings() {
+  const data = await M.api("GET", "/api/settings");
+  settings = data.settings;
+  cards(settings);
+}
+
+async function loadUsage() {
+  try {
+    const u = await M.api("GET", "/api/usage");
+    const bar = (id, used, limit) => {
+      const p = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+      $(id).className = `bar ${p >= 100 ? "full" : p >= 80 ? "warn" : ""}`;
+      $(id).querySelector("i").style.width = `${p}%`;
+    };
+    $("uPlan").textContent = u.plan.name;
+    $("uMin").textContent = `${u.minutes.used} of ${u.minutes.limit}`;
+    bar("uMinBar", u.minutes.used, u.minutes.limit);
+    $("uCalls").textContent = `${u.calls.today} of ${u.calls.limit}`;
+    bar("uCallsBar", u.calls.today, u.calls.limit);
+    $("uCrew").textContent = u.crew.limit === null ? `${u.crew.count}, no limit` : `${u.crew.count} of ${u.crew.limit}`;
+    bar("uCrewBar", u.crew.count, u.crew.limit || 0);
+    $("uNote").textContent = u.blocked || `Minutes reset on ${M.shortDay(u.period.resetsOn)}. A check-in takes about 2 minutes.`;
+  } catch {}
+}
+
+async function pollRounds() {
+  try {
+    const s = await M.api("GET", "/api/rounds");
+    const parts = [];
+    if (s.running) parts.push("A round is running now.");
+    else if (s.lastRound?.finishedAt) parts.push(`Last round: ${s.lastRound.summary}.`);
+    if (s.retryAt) parts.push(`Retries at ${M.timeOf(s.retryAt)}.`);
+    else if (settings?.schedule.enabled) parts.push(`Runs automatically at ${M.clock(settings.schedule.time)}.`);
+    else if (settings) parts.push("Automatic calls are off.");
+    $("roundState").textContent = parts.join(" ") || "No rounds yet.";
+  } catch {}
+}
+
+loadSettings().then(pollRounds).catch((ex) => M.toast(ex.message));
+loadUsage();
+setInterval(pollRounds, 4000);
+</script>
+</body>
+</html>

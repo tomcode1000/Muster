@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in to Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="wrap">
+  <div class="bar">
+    <a class="brand" href="index.html" aria-label="Muster home"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</a>
+    <nav class="links" aria-label="Primary"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#how">How It Works</a><a href="index.html#pricing">Pricing</a><a href="index.html#faq">FAQ</a></nav>
+    <div class="auth"><a class="signin" href="signin.html">Sign In</a><a class="btn btn-sm" href="signup.html">Get Started <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </div>
+</header>
+
+<main class="wrap page">
+  <section class="copy">
+    <span class="pill"><i></i>Welcome back</span>
+    <h1>Sign in to<br><span class="grad">Muster.</span></h1>
+    <p class="lede">Open tomorrow's plan, see who has checked in, and read every call, all in one place.</p>
+    <div class="points">
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><b>Private by default</b><small>Your crew list and call logs stay in your workspace.</small></div></div>
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span><div><b>Get Back to Work</b><small>Sign in and continue where you left off.</small></div></div>
+      <div class="point"><span class="tile"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.8.9 2.8 2.6 3 5.2"/></svg></span><div><b>Built for Site Teams</b><small>Every subcontractor and every booking, from anywhere.</small></div></div>
+    </div>
+  </section>
+
+  <form class="panel" id="form" novalidate>
+    <div class="brand"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</div>
+    <h2 id="title">Welcome back</h2>
+    <p class="sub" id="subtitle">Sign in to your Muster account</p>
+
+    <div class="field" id="emailField">
+      <label for="email">Email address</label>
+      <div class="control"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="email" type="email" autocomplete="email" placeholder="you@company.com" required></div>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="control"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+        <button class="end" type="button" id="reveal" aria-label="Show password"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <div class="row2" id="options">
+      <label class="check"><input type="checkbox" id="remember" checked> Remember me</label>
+      <button class="link" type="button" id="forgot" style="border:0;background:none;padding:0;cursor:pointer;font:inherit">Forgot password?</button>
+    </div>
+    <div class="error" id="error" role="alert"></div>
+    <button class="btn btn-block" type="submit" id="submit"><span id="submitText">Sign in</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <div class="or" id="or">or</div>
+    <button class="btn btn-ghost btn-block" type="button" id="google" style="margin-top:0">
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke:none"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6a5.1 5.1 0 01-2.2 3.4v2.8h3.6c2.1-2 3.2-4.9 3.2-8.2z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 010-4.2V7H2.1a11 11 0 000 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 002.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>
+      Continue with Google
+    </button>
+    <p class="foot" id="foot">Don't have an account? <a class="link" href="signup.html">Sign up</a></p>
+  </form>
+
+  <section class="art" aria-hidden="true">
+    <div class="halo" style="width:420px;height:420px;left:-40px;top:60px"></div>
+    <div class="note" style="left:4px;top:40px">Same team.<br>More done.<svg viewBox="0 0 34 34" style="margin:2px 0 0 60px"><path d="M4 4c14 0 22 8 24 24M28 28l-7-4M28 28l2-8"/></svg></div>
+    <span class="chip" style="right:-20px;top:70px"><span class="b"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></span>Calls synced</span>
+    <div class="appwin tilt" style="left:10px;top:140px;width:330px">
+      <div class="side">
+        <div class="brand"><svg viewBox="0 0 32 28"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</div>
+        <div class="nav on"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6h-4v6H5a1 1 0 01-1-1z"/></svg>Today</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>Plan</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/></svg>Crew</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg>Calls</div>
+        <div class="nav"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</div>
+      </div>
+      <div class="main">
+        <h4>Tomorrow's overview</h4>
+        <div class="stat2">
+          <div><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg><b>12</b><small>Booked</small></div>
+          <div><svg class="i" viewBox="0 0 24 24" style="color:#22a06b"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><b>9</b><small>Confirmed</small></div>
+        </div>
+        <div class="act">
+          <h5>Recent check-ins</h5>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Gulf Coast Concrete</b><small>6:14 PM &#183; 1 min</small></span><em class="w">3 of 8</em></div>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Riverside Electric</b><small>6:42 PM &#183; 2 min</small></span><em>Confirmed</em></div>
+          <div><i><svg class="i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg></i><span><b>Metro Plumbing</b><small>6:34 PM &#183; 1 min</small></span><em>Confirmed</em></div>
+        </div>
+      </div>
+    </div>
+    <span class="chip" style="left:180px;top:470px"><span class="b"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7"/></svg></span>Crew checked in</span>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const resetToken = params.get("reset");
+  const error = $("error");
+  const say = (text, ok = false) => { error.textContent = text; error.classList.toggle("ok-msg", ok); };
+
+  /** Only a path on this site, so a crafted link cannot send someone elsewhere after sign in. */
+  function nextPage(fallback) {
+    const next = params.get("next") || "";
+    return next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : fallback;
+  }
+
+  async function post(url, body) {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Something went wrong. Try again.");
+    return data;
+  }
+
+  function busy(on, label) {
+    $("submit").disabled = on;
+    $("submitText").textContent = label;
+  }
+
+  $("reveal").addEventListener("click", () => {
+    const p = $("password");
+    p.type = p.type === "password" ? "text" : "password";
+    $("reveal").setAttribute("aria-label", p.type === "password" ? "Show password" : "Hide password");
+  });
+  $("google").addEventListener("click", () => say("Google sign in is not connected yet. Use your email and password."));
+  $("forgot").addEventListener("click", () => say("Muster does not send email yet. Whoever runs your Muster server can make you a reset link with npm run reset-password."));
+
+  if (resetToken) {
+    $("title").textContent = "Choose a new password";
+    $("subtitle").textContent = "Use at least 8 characters. You will be signed out everywhere else.";
+    ["emailField", "options", "or", "google"].forEach((id) => ($(id).hidden = true));
+    $("password").autocomplete = "new-password";
+    $("password").placeholder = "Create a strong password";
+    $("submitText").textContent = "Save new password";
+    $("foot").innerHTML = 'Remembered it? <a class="link" href="signin.html">Sign in</a>';
+  } else {
+    fetch("/api/auth/status").then((r) => r.json()).then((s) => {
+      if (s.user) location.replace(nextPage("today.html"));
+      else if (!s.hasAccounts) $("foot").innerHTML = 'No account here yet. <a class="link" href="signup.html">Create the first one</a>';
+    }).catch(() => say("Muster is not reachable. Check that the server is running."));
+  }
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    say("");
+    const password = $("password").value;
+
+    if (resetToken) {
+      if (password.length < 8) return say("Use a password of at least 8 characters.");
+      busy(true, "Saving");
+      try {
+        await post("/api/auth/reset", { token: resetToken, password });
+        history.replaceState(null, "", "signin.html?changed=1");
+        location.reload();
+      } catch (ex) {
+        say(ex.message);
+        busy(false, "Save new password");
+      }
+      return;
+    }
+
+    const email = $("email").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("Enter a valid email address.");
+    if (!password) return say("Enter your password.");
+    busy(true, "Signing in");
+    try {
+      const data = await post("/api/auth/signin", { email, password, remember: $("remember").checked });
+      location.replace(nextPage(data.next));
+    } catch (ex) {
+      say(ex.message);
+      busy(false, "Sign in");
+    }
+  });
+
+  if (params.get("changed")) say("Password changed. Sign in with your new password.", true);
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent settings · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<script src="settings-lib.js"></script>
+<style>
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .count { text-align: right; font-size: 11px; color: #8a90a2; margin: 6px 0 0; }
+  .fills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .fills button { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid #dbe3f7; background: #eef3fe; font: 500 11px var(--sans); color: #2150d0; }
+  .fills button:hover { background: #e2eafd; }
+  .q-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 150px 32px; gap: 10px; align-items: center; margin-top: 10px; }
+  .q-row .n { width: 26px; height: 26px; border-radius: 50%; background: #eaf0fe; color: var(--blue); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  .voices { display: grid; gap: 10px; margin-top: 12px; }
+  .voices div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 11px; border: 1px solid var(--line); background: #fbfcfe; font-size: 12.5px; color: var(--navy); }
+  .voices small { font-size: 11.5px; color: #6b7390; }
+  .preview { margin-top: 14px; display: grid; gap: 10px; }
+  .preview pre { margin: 0; padding: 12px 14px; max-height: 300px; overflow: auto; border-radius: 10px; background: #f6f8fc; font: 11.5px/1.6 ui-monospace, Consolas, monospace; color: #2d3a5c; white-space: pre-wrap; }
+  .preview .lbl { font-size: 11px; font-weight: 700; color: var(--navy); }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } .q-row { grid-template-columns: 26px 1fr 110px 32px; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <form class="main" id="form" novalidate>
+        <div id="pageHead"></div>
+
+        <section class="card set">
+          <div class="set-h"><span class="ic" data-ic="wave"></span><span><b>Agent identity</b><small>What the agent calls itself, and the voices it speaks with.</small></span></div>
+          <div class="f"><label for="agentName">Agent name <span class="req">*</span></label><div class="ctl"><input id="agentName" maxlength="40" placeholder="Muster"></div></div>
+          <div class="f"><span class="lbl">Voice</span>
+            <div class="voices">
+              <div><span>English calls</span><small>Jane</small></div>
+              <div><span>Spanish calls</span><small>Lola</small></div>
+            </div>
+            <p class="hint">These are the two Voice Agent API voices Muster uses. The voice follows the foreman's language on their crew record.</p>
+          </div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="log"></span><span><b>Opening words</b><small>The first thing the agent says on every call.</small></span></div>
+          <div class="two" style="margin-top:12px">
+            <div class="f" style="margin:0"><label for="greetEn">English opening words <span class="req">*</span></label><div class="ctl"><textarea id="greetEn" rows="4" maxlength="300"></textarea></div><p class="count" id="cEn"></p></div>
+            <div class="f" style="margin:0"><label for="greetEs">Spanish opening words <span class="req">*</span></label><div class="ctl"><textarea id="greetEs" rows="4" maxlength="300"></textarea></div><p class="count" id="cEs"></p></div>
+          </div>
+          <div class="f"><span class="lbl">Fill-ins <em>click to insert into the opening words you last edited</em></span>
+            <div class="fills" id="fills"></div>
+            <p class="hint">Each fill-in is replaced with the real booking when the call is placed.</p>
+          </div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="edit"></span><span><b>Extra instructions</b><small>Anything else the agent should know about this site.</small></span></div>
+          <div class="f"><div class="ctl"><textarea id="instructions" rows="3" maxlength="2000" placeholder="Remind crews that gate 2 needs a badge after 6pm."></textarea></div><p class="count" id="cInstr"></p></div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="help"></span><span><b>Extra questions</b><small>Asked after the standard check-in. Up to 10.</small></span></div>
+          <div id="questions"></div>
+          <button type="button" class="btn-line" id="addQuestion" style="margin-top:12px">Add question</button>
+          <p class="hint">Every answer is saved as its own field in the call log, and in your sheet when you use one.</p>
+        </section>
+
+        <div class="form-actions">
+          <span class="msg" id="msg" role="status"></span>
+          <button type="button" class="btn-line" id="cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="save">Save changes</button>
+        </div>
+      </form>
+
+      <div class="side-col">
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="log"></span><b>View full prompt</b></div>
+          <p>See exactly what is sent to the agent, with this project's context filled in.</p>
+          <button type="button" class="btn-soft" id="preview" style="width:100%">View prompt</button>
+          <div class="preview" id="previewBox" hidden>
+            <div class="ctl" id="previewPick" hidden><select id="previewBooking" aria-label="Preview for booking"></select><span data-ic="chevDown" class="chev"></span></div>
+            <span class="lbl">Opening words</span><pre id="pvGreeting"></pre>
+            <span class="lbl">Prompt</span><pre id="pvPrompt"></pre>
+            <span class="lbl">Words sent for recognition</span><pre id="pvTerms"></pre>
+            <span class="lbl">Tools</span><pre id="pvTools"></pre>
+          </div>
+        </section>
+
+        <section class="card sc tips">
+          <div class="sc-h"><span class="ic" data-ic="shield"></span><b>Accuracy rules</b></div>
+          <p>These always apply, whatever you write above.</p>
+          <ul>
+            <li data-check>Record only what the foreman actually said</li>
+            <li data-check>Ask again when an answer is unclear</li>
+            <li data-check>Keep answers short and in site language</li>
+            <li data-check>Read the key facts back before hanging up</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const S = window.MusterSettings;
+const $ = (id) => document.getElementById(id);
+const FILLS = ["first_name", "foreman", "company", "work", "area", "start", "superintendent", "project", "agent"];
+let lastGreeting = "greetEn";
+
+M.mount("settings-agent.html");
+$("pageHead").innerHTML = S.head("settings.html", "Agent settings", "Control how your agent speaks, what it knows and what else it asks.");
+document.querySelectorAll("[data-ic]").forEach((el) => {
+  el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : `<span class="ic">${M.icon(el.dataset.ic)}</span>`;
+});
+document.querySelectorAll("[data-check]").forEach((li) => (li.innerHTML = `${M.icon("check")}<span>${li.textContent}</span>`));
+$("fills").innerHTML = FILLS.map((f) => `<button type="button" data-fill="${f}">{${f}}</button>`).join("");
+
+function counts() {
+  $("cEn").textContent = `${$("greetEn").value.length}/300`;
+  $("cEs").textContent = `${$("greetEs").value.length}/300`;
+  $("cInstr").textContent = `${$("instructions").value.length}/2000`;
+}
+
+function number() {
+  [...$("questions").children].forEach((row, i) => (row.querySelector(".n").textContent = String(i + 1)));
+}
+
+function addQuestion(q = { id: "", text: "", answerType: "yes_no" }) {
+  if ($("questions").children.length >= 10) return M.toast("Up to 10 extra questions.");
+  const row = document.createElement("div");
+  row.className = "q-row";
+  row.dataset.id = q.id || "";
+  row.innerHTML = `
+    <span class="n"></span>
+    <div class="ctl"><input maxlength="200" placeholder="e.g. Do you need the hoist tomorrow?" value="${M.esc(q.text)}" aria-label="Question"></div>
+    <div class="ctl"><select aria-label="Answer type">${[["yes_no", "Yes or no"], ["number", "Number"], ["text", "Short answer"]].map(([v, l]) => `<option value="${v}" ${q.answerType === v ? "selected" : ""}>${l}</option>`).join("")}</select>${M.icon("chevDown", 'class="chev"')}</div>
+    <button type="button" class="icon-btn" aria-label="Remove question">${M.icon("trash")}</button>`;
+  row.querySelector("button").onclick = () => { row.remove(); number(); };
+  $("questions").appendChild(row);
+  number();
+}
+
+function collect() {
+  return {
+    name: $("agentName").value,
+    greetingEn: $("greetEn").value,
+    greetingEs: $("greetEs").value,
+    instructions: $("instructions").value,
+    questions: [...$("questions").children].map((r) => ({ id: r.dataset.id || undefined, text: r.querySelector("input").value, answerType: r.querySelector("select").value })),
+  };
+}
+
+function render(s) {
+  $("agentName").value = s.agent.name;
+  $("greetEn").value = s.agent.greetingEn;
+  $("greetEs").value = s.agent.greetingEs;
+  $("instructions").value = s.agent.instructions;
+  $("questions").innerHTML = "";
+  s.agent.questions.forEach(addQuestion);
+  counts();
+}
+
+$("form").addEventListener("input", () => { counts(); S.setMessage($("msg"), ""); });
+$("addQuestion").addEventListener("click", () => addQuestion());
+["greetEn", "greetEs"].forEach((id) => $(id).addEventListener("focus", () => (lastGreeting = id)));
+$("fills").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-fill]");
+  if (!b) return;
+  const el = $(lastGreeting);
+  const at = el.selectionStart ?? el.value.length;
+  el.value = `${el.value.slice(0, at)}{${b.dataset.fill}}${el.value.slice(el.selectionEnd ?? at)}`;
+  el.focus();
+  counts();
+});
+$("cancel").addEventListener("click", () => render(S.current()));
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("save").disabled = true;
+  try {
+    await S.save({ agent: collect() });
+    S.setMessage($("msg"), "Saved.", "ok");
+  } catch (ex) {
+    S.setMessage($("msg"), ex.errors ? ex.errors.join(". ") : ex.message, "bad");
+  } finally {
+    $("save").disabled = false;
+  }
+});
+
+async function preview() {
+  try {
+    const p = await M.api("POST", "/api/agent/preview", { agent: collect(), activityId: $("previewBooking").value || undefined });
+    $("previewPick").hidden = p.bookings.length < 2;
+    $("previewBooking").innerHTML = p.bookings.map((b) => `<option value="${M.esc(b.id)}" ${b.id === p.activityId ? "selected" : ""}>${M.esc(b.label)}</option>`).join("");
+    $("pvGreeting").textContent = p.greeting;
+    $("pvPrompt").textContent = p.systemPrompt;
+    $("pvTerms").textContent = p.keyterms.join(", ");
+    $("pvTools").textContent = p.tools.join(", ");
+    $("previewBox").hidden = false;
+  } catch (ex) {
+    $("previewBox").hidden = true;
+    M.toast(ex.message);
+  }
+}
+$("preview").addEventListener("click", preview);
+$("previewBooking").addEventListener("change", preview);
+
+S.load().then(({ settings }) => render(settings)).catch((ex) => S.setMessage($("msg"), ex.message, "bad"));
+</script>
+</body>
+</html>

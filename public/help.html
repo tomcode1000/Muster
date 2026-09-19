@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  .finder-in.page { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+  .topics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+  .topic { padding: 18px; }
+  .topic .ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; }
+  .topic .ic.blue { background: #e7edfd; color: var(--blue); }
+  .topic .ic.green { background: #e3f5eb; color: var(--green); }
+  .topic .ic.violet { background: #efe9fd; color: #6d4fd1; }
+  .topic .ic.amber { background: #fdf2e2; color: var(--amber); }
+  .topic b { display: block; margin-top: 12px; font-size: 13px; color: var(--navy); }
+  .topic p { margin: 6px 0 12px; font-size: 11.5px; line-height: 1.55; color: #6b7390; }
+  .topic .more { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--blue); }
+  .topic .more svg { width: 13px; height: 13px; }
+  .stuck { display: flex; align-items: center; gap: 16px; padding: 18px 20px; margin-top: 16px; }
+  .stuck .ic { width: 38px; height: 38px; border-radius: 50%; background: #e7edfd; color: var(--blue); display: grid; place-items: center; flex: none; }
+  .stuck b { font-size: 13px; color: var(--navy); }
+  .stuck p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: #6b7390; }
+  .stuck .btn-primary, .stuck .btn-line { margin-left: auto; height: 38px; padding: 0 18px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .limits-row { display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: center; padding: 14px 18px; margin-top: 14px; }
+  .limits-row svg { width: 17px; height: 17px; color: var(--blue); }
+  .limits-row b { font-size: 12.5px; color: var(--navy); }
+  .limits-row small { display: block; margin-top: 2px; font-size: 11.5px; color: #6b7390; }
+  .limits-row button { border: 0; background: transparent; font-size: 12px; font-weight: 600; color: var(--blue); }
+
+  .article { padding: 20px 22px 22px; position: sticky; top: 14px; }
+  .article .back { margin: 0 0 14px; }
+  .article h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); }
+  .article .meta { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 11px; color: #8a90a2; }
+  .article .meta .tag { padding: 3px 10px; border-radius: 999px; background: #e3ebfd; color: #2150d0; font-weight: 700; }
+  .article p { font-size: 12.5px; line-height: 1.7; color: #4a5268; }
+  .article h3 { margin: 18px 0 0; font-size: 13px; color: var(--navy); }
+  .steps { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; font-size: 12.5px; line-height: 1.55; color: #3b4459; }
+  .steps li::before { counter-increment: step; content: counter(step); width: 24px; height: 24px; border-radius: 50%; background: #eaf0fe; color: var(--blue); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  .tip { display: grid; grid-template-columns: 18px 1fr; gap: 11px; margin-top: 18px; padding: 14px; border-radius: 12px; background: #f2f6fe; border: 1px solid #dfe8fb; }
+  .tip svg { width: 16px; height: 16px; color: var(--blue); }
+  .tip b { display: block; font-size: 12px; color: var(--navy); }
+  .tip p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.6; }
+  .article-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .article-nav button { border: 0; background: transparent; font-size: 11.5px; font-weight: 600; color: var(--blue); display: inline-flex; align-items: center; gap: 7px; }
+  .article-nav button:disabled { color: #b3bbcd; }
+  .article-nav svg { width: 13px; height: 13px; }
+  .hitlist { display: grid; gap: 2px; margin-top: 14px; }
+  .hitlist a { display: block; padding: 11px 14px; border-radius: 11px; border: 1px solid var(--line); }
+  .hitlist a:hover { background: #f2f6fe; border-color: #c8d8fb; }
+  .hitlist b { display: block; font-size: 12.5px; color: var(--navy); }
+  .hitlist small { display: block; margin-top: 2px; font-size: 11.5px; color: #6b7390; }
+  @media (max-width: 1100px) { .topics { grid-template-columns: 1fr 1fr; } .article { position: static; } }
+  @media (max-width: 720px) { .topics { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content" style="grid-template-columns:minmax(0,1fr) 400px">
+      <div class="main">
+        <a class="back" href="settings.html" id="backLink"></a>
+        <div class="head"><div>
+          <h1>Help</h1>
+          <p>Answers, guides and the things Muster does not do yet.</p>
+        </div></div>
+
+        <label class="finder-in page">
+          <span id="searchIcon"></span>
+          <input id="q" placeholder="Search help articles" aria-label="Search help articles">
+        </label>
+
+        <div id="results" hidden><div class="hitlist" id="hits"></div></div>
+
+        <div id="browse">
+          <div class="topics" id="topics"></div>
+
+          <section class="card stuck">
+            <span class="ic" data-ic="headset"></span>
+            <div>
+              <b>Still stuck?</b>
+              <p id="stuckText">Send us what happened and what you expected, with the time of the call if there was one.</p>
+            </div>
+            <a class="btn-primary" id="contact" hidden>Contact support</a>
+          </section>
+
+          <section class="card limits-row">
+            <span data-ic="log"></span>
+            <div><b>What Muster does not do yet</b><small>Worth knowing before you plan around it.</small></div>
+            <button type="button" id="openLimits">Read this</button>
+          </section>
+        </div>
+      </div>
+
+      <div class="side-col">
+        <section class="card article" id="article"></section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+
+M.mount("help.html");
+$("backLink").innerHTML = `${M.icon("arrow")}Back to settings`;
+$("searchIcon").outerHTML = M.icon("search", 'style="width:16px;height:16px;color:#6b7390"');
+document.querySelectorAll("[data-ic]").forEach((el) => (el.outerHTML = el.classList.contains("ic") ? `<span class="ic">${M.icon(el.dataset.ic)}</span>` : M.icon(el.dataset.ic)));
+
+const TOPICS = [
+  ["getting-started", "Getting started", "blue", "wave", "Set up your project, add your first subcontractor and hear a check-in."],
+  ["crew", "Crew and bookings", "green", "crew", "Add subcontractors, book who works where, and keep tomorrow's plan right."],
+  ["calls", "Call times", "violet", "clock", "When rounds run, how retries work, and how to call everyone now."],
+  ["sheets", "Google Sheets", "green", "log", "Connect a sheet, share it with Muster, and read results back."],
+  ["phone", "Phone and numbers", "blue", "phone", "The number foremen see, voicemail, ring time and test calls."],
+  ["limits", "Limits and billing", "amber", "chart", "Plan limits, what happens when you reach one, and how usage is counted."],
+];
+
+const ARTICLES = [
+  {
+    id: "first-subcontractor", topic: "getting-started", title: "How to add your first subcontractor", read: "2 min",
+    intro: "A subcontractor is a company plus the one foreman who answers the phone. Muster calls that foreman, so the phone number matters more than anything else on the record.",
+    steps: [
+      "Open Crew in the left menu.",
+      "Press Add subcontractor.",
+      "Enter the company, the trade, the foreman's name and their phone number with its country code.",
+      "Choose English or Spanish. The call is spoken in that language.",
+      "Press Save subcontractor.",
+    ],
+    tip: "On a Twilio trial account you can only call numbers you verified in Twilio, so verify the foreman's number there first.",
+  },
+  {
+    id: "first-check-in", topic: "getting-started", title: "Hear a check-in before any foreman does", read: "2 min",
+    intro: "Try a check-in runs the same conversation as a phone call, from your browser. It uses your microphone instead of a phone line, and it is the fastest way to see what Muster records.",
+    steps: [
+      "Add a booking for tomorrow on the Plan page.",
+      "Open Try a check-in and pick that booking.",
+      "Press Start check-in and allow the microphone.",
+      "Answer as a foreman would, including an awkward answer like a short crew.",
+      "When it ends, open the call in Calls to see what was recorded.",
+    ],
+    tip: "A browser check-in counts towards your plan the same way a phone call does, because the voice agent is billed by the minute either way.",
+  },
+  {
+    id: "bookings", topic: "crew", title: "Book who works tomorrow", read: "2 min",
+    intro: "A booking is one subcontractor, doing one piece of work, in one area, at a set time. Muster calls the foreman of every booking for tomorrow, and compares what they say against the booking.",
+    steps: [
+      "Open Plan and pick the day.",
+      "Press Add booking.",
+      "Choose the subcontractor, then write the work, the area, the start and finish, and the crew you expect.",
+      "Add prerequisites, such as pump truck booked, so the call asks about them.",
+      "Save. The booking shows as Not called until the round runs.",
+    ],
+    tip: "Copy from another day fills a whole day in one go when your plan repeats.",
+  },
+  {
+    id: "rounds", topic: "calls", title: "When Muster calls, and how retries work", read: "2 min",
+    intro: "A round is one pass through everyone booked for tomorrow. It runs at your call time, in your project's time zone, on the days you choose.",
+    steps: [
+      "Set the time, days and calling hours on Settings, Call times.",
+      "Set how long to wait before trying again, and how many attempts each foreman gets.",
+      "Watch the round on the Calls page, where you can also start one early or stop it after the current call.",
+      "Anyone who did not check in is retried after your retry gap, until they use up their attempts.",
+    ],
+    tip: "No call is ever placed outside your calling hours, even when a retry falls due.",
+  },
+  {
+    id: "sheet", topic: "sheets", title: "Connect a Google Sheet", read: "3 min",
+    intro: "Muster can read your crew and tomorrow's plan straight from a sheet, and write every result back to the same row. Your sheet stays the source of truth.",
+    steps: [
+      "Open Settings, Data source and choose Connect a Google Sheet.",
+      "Copy the account email shown there.",
+      "In Google Sheets, share your sheet with that email as an editor.",
+      "Paste the sheet link into Muster and press Save and read the sheet now.",
+      "Fix any rows Muster reports, then read it again.",
+    ],
+    tip: "Muster finds columns by their header names, so you can add your own columns freely. Do not rename the headers it writes to.",
+  },
+  {
+    id: "number", topic: "phone", title: "Which number foremen see", read: "2 min",
+    intro: "By default calls come from the Muster number set on your server. You can call from your own number instead, which foremen recognise and answer far more often.",
+    steps: [
+      "Open Settings, Phone.",
+      "Turn on Use your own phone number and enter it with its country code.",
+      "Make sure that number is one you own in Twilio, or one you verified there as a caller ID.",
+      "Press Save changes, then Send test call to hear it ring.",
+    ],
+    tip: "Ring time and voicemail are paid Twilio features. On a trial account the call still goes through, and the round log says the setting was skipped.",
+  },
+  {
+    id: "limits", topic: "limits", title: "How limits are counted", read: "2 min",
+    intro: "Three limits apply: call minutes a month, calls a day, and how many subcontractors you can keep. Minutes count every conversation, phone and browser alike, because both are billed by the minute.",
+    steps: [
+      "Open Usage and limits to see all three, with the reset dates.",
+      "Watch the 14 day history to see which evenings cost the most.",
+      "When a limit is reached, calls stop. Nothing is deleted, and your plan and data stay as they are.",
+      "Minutes reset on the first of the month, calls at midnight, both on your project's clock.",
+    ],
+    tip: "A typical check-in runs under two minutes, so 30 minutes is roughly 15 check-ins.",
+  },
+  {
+    id: "not-yet", topic: "limits", title: "What Muster does not do yet", read: "1 min",
+    intro: "Worth knowing before you plan around it.",
+    steps: [
+      "One project per workspace. Several projects are not built yet.",
+      "Everyone who signs in shares the same workspace. There are no separate roles yet.",
+      "Calls are not recorded as audio. You get the full transcript and every recorded fact instead.",
+      "Google sign in is not connected. Use your email and a password.",
+      "There is no morning email or SMS yet. Open Today instead.",
+    ],
+    tip: "Ask for any of these and I can tell you what it would take. Nothing here is hidden behind a plan.",
+  },
+];
+
+let current = 0;
+
+function drawTopics() {
+  $("topics").innerHTML = TOPICS.map(([id, name, colour, ic, text]) => {
+    const count = ARTICLES.filter((a) => a.topic === id).length;
+    return `<section class="card topic" data-topic="${id}">
+      <span class="ic ${colour}">${M.icon(ic)}</span>
+      <b>${M.esc(name)}</b>
+      <p>${M.esc(text)}</p>
+      <span class="more">${count} ${count === 1 ? "article" : "articles"} ${M.icon("arrow")}</span>
+    </section>`;
+  }).join("");
+}
+
+function drawArticle(index) {
+  current = index;
+  const a = ARTICLES[index];
+  const topic = TOPICS.find((t) => t[0] === a.topic);
+  $("article").innerHTML = `
+    <a class="back" href="#" id="toTop">${M.icon("arrow")}Help centre</a>
+    <h2>${M.esc(a.title)}</h2>
+    <div class="meta"><span class="tag">${M.esc(topic[1])}</span><span>${a.read} read</span></div>
+    <p>${M.esc(a.intro)}</p>
+    <h3>Steps</h3>
+    <ol class="steps">${a.steps.map((s) => `<li><span>${M.esc(s)}</span></li>`).join("")}</ol>
+    <div class="tip">${M.icon("bulb")}<div><b>Worth knowing</b><p>${M.esc(a.tip)}</p></div></div>
+    <div class="article-nav">
+      <button type="button" id="prev" ${index === 0 ? "disabled" : ""}>${M.icon("chevLeft")}Previous</button>
+      <button type="button" id="next" ${index === ARTICLES.length - 1 ? "disabled" : ""}>Next${M.icon("chevRight")}</button>
+    </div>`;
+  $("prev").onclick = () => drawArticle(Math.max(0, current - 1));
+  $("next").onclick = () => drawArticle(Math.min(ARTICLES.length - 1, current + 1));
+  $("toTop").onclick = (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+}
+
+$("topics").addEventListener("click", (e) => {
+  const card = e.target.closest("[data-topic]");
+  if (!card) return;
+  const index = ARTICLES.findIndex((a) => a.topic === card.dataset.topic);
+  if (index >= 0) drawArticle(index);
+});
+
+$("q").addEventListener("input", () => {
+  const q = $("q").value.trim().toLowerCase();
+  const on = q.length >= 2;
+  $("results").hidden = !on;
+  $("browse").hidden = on;
+  if (!on) return;
+  const hits = ARTICLES.filter((a) => [a.title, a.intro, ...a.steps, a.tip].join(" ").toLowerCase().includes(q));
+  $("hits").innerHTML = hits.length
+    ? hits.map((a) => `<a href="#" data-a="${a.id}"><b>${M.esc(a.title)}</b><small>${M.esc(a.intro.slice(0, 110))}.</small></a>`).join("")
+    : `<p class="notif-empty">Nothing matches "${M.esc(q)}". Try crew, sheet, retry or limits.</p>`;
+});
+
+$("hits").addEventListener("click", (e) => {
+  const link = e.target.closest("[data-a]");
+  if (!link) return;
+  e.preventDefault();
+  drawArticle(ARTICLES.findIndex((a) => a.id === link.dataset.a));
+});
+
+$("openLimits").addEventListener("click", () => drawArticle(ARTICLES.findIndex((a) => a.id === "not-yet")));
+
+M.api("GET", "/api/settings").then(({ supportEmail }) => {
+  if (!supportEmail) {
+    $("stuckText").textContent = "No support address is set on this server. Add MUSTER_SUPPORT_EMAIL to .env and it appears here.";
+    return;
+  }
+  const link = $("contact");
+  link.hidden = false;
+  link.href = `mailto:${supportEmail}?subject=${encodeURIComponent("Muster support")}`;
+  link.innerHTML = `${M.icon("headset")}Contact support`;
+}).catch(() => {});
+
+drawTopics();
+drawArticle(0);
+</script>
+</body>
+</html>

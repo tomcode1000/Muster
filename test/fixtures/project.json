@@ -1,0 +1,72 @@
+{
+  "id": "harbor-clinic",
+  "name": "Harbor Street Clinic",
+  "superintendent": "Sam Reyes",
+  "timezone": "America/New_York",
+  "planDate": "2026-09-15",
+  "vocabulary": [
+    "Level 1", "Level 2", "Level 3", "east wing", "west wing", "slab", "pour",
+    "pump truck", "rebar", "pre-pour inspection", "drywall", "board", "studs",
+    "rough-in", "conduit", "top-out", "hoist", "laydown yard", "gate 2",
+    "RFI", "punch list", "scissor lift", "boom lift"
+  ],
+  "contacts": [
+    { "id": "gulf-concrete", "company": "Gulf Coast Concrete", "trade": "Concrete", "foreman": "Luis Ortega", "phone": "+10000000001", "language": "es" },
+    { "id": "brightline-electric", "company": "Brightline Electric", "trade": "Electrical", "foreman": "Dana Brooks", "phone": "+10000000002", "language": "en" },
+    { "id": "coastline-drywall", "company": "Coastline Drywall", "trade": "Drywall", "foreman": "Carlos Mendez", "phone": "+10000000003", "language": "es" },
+    { "id": "tidewater-plumbing", "company": "Tidewater Plumbing", "trade": "Plumbing", "foreman": "Mike Chen", "phone": "+10000000004", "language": "en" }
+  ],
+  "activities": [
+    {
+      "id": "l1-slab-pour",
+      "contactId": "gulf-concrete",
+      "description": "Level 1 slab pour",
+      "area": "Level 1 west wing",
+      "start": "06:30",
+      "end": "13:00",
+      "crewNeeded": 8,
+      "exclusiveArea": true,
+      "requirements": [
+        { "id": "pump-truck", "label": "Pump truck booked" },
+        { "id": "pre-pour-inspection", "label": "Pre-pour inspection passed" }
+      ],
+      "materials": ["concrete"]
+    },
+    {
+      "id": "l3-electrical-rough-in",
+      "contactId": "brightline-electric",
+      "description": "Electrical rough-in",
+      "area": "Level 3 east wing",
+      "start": "07:00",
+      "end": "15:30",
+      "crewNeeded": 4,
+      "exclusiveArea": false,
+      "requirements": [],
+      "materials": ["conduit"]
+    },
+    {
+      "id": "l3-drywall-hang",
+      "contactId": "coastline-drywall",
+      "description": "Drywall hanging",
+      "area": "Level 3 east wing",
+      "start": "09:00",
+      "end": "17:00",
+      "crewNeeded": 6,
+      "exclusiveArea": true,
+      "requirements": [],
+      "materials": ["drywall board"]
+    },
+    {
+      "id": "l2-plumbing-top-out",
+      "contactId": "tidewater-plumbing",
+      "description": "Plumbing top-out",
+      "area": "Level 2 east wing",
+      "start": "07:30",
+      "end": "15:00",
+      "crewNeeded": 3,
+      "exclusiveArea": false,
+      "requirements": [],
+      "materials": []
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project settings · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<script src="settings-lib.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <form class="main" id="form" novalidate>
+        <div id="pageHead"></div>
+
+        <section class="card set">
+          <div class="set-h"><span class="ic" data-ic="building"></span><span><b>Project name</b></span></div>
+          <div class="f"><label for="name">Project name <span class="req">*</span></label><div class="ctl"><input id="name" maxlength="120" placeholder="e.g. Riverside Office Tower" required></div>
+            <p class="hint">Foremen hear this at the start of every call.</p></div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="user"></span><span><b>Superintendent</b></span></div>
+          <div class="f"><label for="super">Name <span class="req">*</span></label><div class="ctl"><input id="super" maxlength="120" placeholder="The name foremen know you by" required></div>
+            <p class="hint">The agent says it is calling on your behalf.</p></div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="clock"></span><span><b>Time zone</b></span></div>
+          <div class="f"><label for="tz">Time zone <span class="req">*</span></label><div class="ctl"><select id="tz"></select><span data-ic="chevDown" class="chev"></span></div>
+            <p class="hint">Call times, plan dates and the morning view all follow this clock.</p></div>
+          <hr>
+
+          <div class="set-h" style="margin-top:20px"><span class="ic" data-ic="tag"></span><span><b>Site words to recognise</b><small>Add the words and phrases the agent should listen for. They help it hear what the foreman is saying.</small></span></div>
+          <div class="f"><div class="wordbox" id="words"></div>
+            <div class="set-row" style="margin-top:8px"><p class="hint" id="wordCount"></p><p class="hint">100 words maximum</p></div>
+            <p class="hint">Company names, areas and prerequisites from your bookings are added to this list automatically.</p></div>
+        </section>
+
+        <div class="form-actions">
+          <span class="msg" id="msg" role="status"></span>
+          <button type="button" class="btn-line" id="cancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="save">Save changes</button>
+        </div>
+      </form>
+
+      <div class="side-col">
+        <section class="card sc tips">
+          <div class="sc-h"><span class="ic" data-ic="bulb"></span><b>Recognition tips</b></div>
+          <p>Use short, clear words and the phrases foremen actually say on site.</p>
+          <ul>
+            <li data-check>Include words specific to this site</li>
+            <li data-check>Add the abbreviations crews use</li>
+            <li data-check>Keep each one to 1 to 3 words</li>
+            <li data-check>Add both the singular and the plural</li>
+          </ul>
+        </section>
+
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic="chart"></span><b>Current usage</b></div>
+          <div class="ring">
+            <div class="dial" id="dial"><span id="dialText">0/100</span></div>
+            <div><b id="ringLabel">Words added</b><small id="ringSub">0 of 100</small></div>
+          </div>
+          <div class="note-card"><span data-ic="log"></span><p>More words help recognition, but keep them to what matters on this project.</p></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const S = window.MusterSettings;
+const $ = (id) => document.getElementById(id);
+let words = null;
+
+M.mount("settings-project.html");
+$("pageHead").innerHTML = S.head("settings.html", "Project settings", "Update your project details and the words your agent should recognise during calls.");
+document.querySelectorAll("[data-ic]").forEach((el) => {
+  el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : `<span class="ic">${M.icon(el.dataset.ic)}</span>`;
+});
+document.querySelectorAll("[data-check]").forEach((li) => (li.innerHTML = `${M.icon("check")}<span>${li.textContent}</span>`));
+
+function drawRing(count) {
+  const pct = Math.min(100, (count / 100) * 100);
+  $("dial").style.background = `conic-gradient(var(--blue-2) ${pct}%, #e8ecf6 0)`;
+  $("dial").innerHTML = `<span style="background:#fff;width:46px;height:46px;border-radius:50%;display:grid;place-items:center">${count}/100</span>`;
+  $("ringSub").textContent = `${count} of 100`;
+  $("wordCount").textContent = `${count} of 100`;
+}
+
+function render(s) {
+  $("name").value = s.project.name;
+  $("super").value = s.project.superintendent;
+  S.options($("tz"), S.timezones(s.project.timezone).map((z) => [z, S.zoneLabel(z)]), s.project.timezone);
+  words = S.wordBox($("words"), s.project.vocabulary, { max: 100, onChange: drawRing });
+}
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("save").disabled = true;
+  try {
+    await S.save({ project: { name: $("name").value, superintendent: $("super").value, timezone: $("tz").value, vocabulary: words.value() } });
+    S.setMessage($("msg"), "Saved.", "ok");
+  } catch (ex) {
+    S.setMessage($("msg"), ex.errors ? ex.errors.join(". ") : ex.message, "bad");
+  } finally {
+    $("save").disabled = false;
+  }
+});
+$("form").addEventListener("input", () => S.setMessage($("msg"), ""));
+$("cancel").addEventListener("click", () => render(S.current()));
+
+S.load().then(({ settings }) => render(settings)).catch((ex) => S.setMessage($("msg"), ex.message, "bad"));
+</script>
+</body>
+</html>

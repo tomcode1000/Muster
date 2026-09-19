@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Try a check-in · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+<style>
+  .stage { padding: 22px; }
+  .pick { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; }
+  .booking { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: center; margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: #f6f8fc; }
+  .booking .av { width: 42px; height: 42px; border-radius: 50%; background: #e3eafc; color: #3450b8; font-weight: 700; display: grid; place-items: center; }
+  .booking b { display: block; font-size: 13.5px; color: var(--navy); }
+  .booking small { display: block; margin-top: 3px; font-size: 11.5px; color: #6b7390; }
+  .talk-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 52px; margin-top: 18px; border: 0; border-radius: 14px; background: var(--blue-2); color: #fff; font-size: 14.5px; font-weight: 700; box-shadow: 0 12px 26px rgba(31, 107, 255, .28); }
+  .talk-btn:hover { background: #125ef0; }
+  .talk-btn.live { background: #e0433f; box-shadow: 0 12px 26px rgba(224, 67, 63, .28); }
+  .talk-btn:disabled { opacity: .5; cursor: default; box-shadow: none; }
+  .talk-btn svg { width: 18px; height: 18px; stroke-width: 2.2; }
+  .status { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-top: 14px; font-size: 12.5px; color: #4a5268; }
+  .status .dot { width: 9px; height: 9px; border-radius: 50%; background: #c8cfdd; flex: none; }
+  .status.live .dot { background: #1fb37a; box-shadow: 0 0 0 0 rgba(31, 179, 122, .5); animation: pulse 1.6s ease-out infinite; }
+  .status.bad { color: #b3363b; }
+  .status.bad .dot { background: #e0433f; }
+  @keyframes pulse { to { box-shadow: 0 0 0 9px rgba(31, 179, 122, 0); } }
+  .turns { display: grid; gap: 10px; margin-top: 14px; }
+  .turn { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 12.5px; line-height: 1.55; }
+  .turn small { display: block; margin-bottom: 3px; font-size: 10.5px; font-weight: 600; opacity: .75; }
+  .turn.agent { justify-self: start; background: #f1f4fb; border-top-left-radius: 4px; }
+  .turn.foreman { justify-self: end; background: #e3ebfd; color: #1d3a8f; border-top-right-radius: 4px; }
+  .steps li { margin: 8px 0; font-size: 12px; line-height: 1.55; color: #4a5268; }
+  .steps { padding-left: 18px; margin: 10px 0 0; }
+  @media (max-width: 820px) { .pick { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <div class="main">
+        <div class="head"><div>
+          <div class="eyebrow">Try a check-in</div>
+          <h1>Hear exactly what a foreman hears.</h1>
+          <p>Speak as the foreman from your browser. Muster runs the same conversation it runs on a phone call, and records the result.</p>
+        </div></div>
+
+        <section class="card stage" id="stage">
+          <div class="pick">
+            <div class="f" style="margin:0"><label for="date">Day</label>
+              <div class="ctl picker"><span data-ic="plan"></span><span class="shown" id="dateShown">Loading</span><input type="date" id="date" aria-label="Day"></div></div>
+            <div class="f" style="margin:0"><label for="booking">Booking</label>
+              <div class="ctl"><select id="booking"></select><span data-ic="chevDown" class="chev"></span></div></div>
+          </div>
+          <div class="booking" id="details"></div>
+          <button class="talk-btn" id="go" type="button"></button>
+          <div class="status" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">Pick a booking, then start.</span></div>
+        </section>
+
+        <section class="card sc" id="convoCard" hidden>
+          <div class="sc-h"><span class="ic" data-ic2="wave"></span><b>Live transcript</b></div>
+          <div class="turns" id="transcript"></div>
+          <a class="more" id="callLink" hidden>Open the call log</a>
+        </section>
+      </div>
+
+      <div class="side-col">
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic2="bulb"></span><b>How to test it</b></div>
+          <ol class="steps">
+            <li>Allow the microphone when asked, and use headphones if you can.</li>
+            <li>Muster speaks first. Answer as the foreman would, in English or Spanish.</li>
+            <li>Try the awkward answers too: a smaller crew, a late start, a missing pump truck.</li>
+            <li>When it ends, open the call log to see what was recorded.</li>
+          </ol>
+        </section>
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" data-ic2="chart"></span><b>Counts toward usage</b></div>
+          <p id="usageText">Browser check-ins use call minutes, the same as phone calls.</p>
+          <a class="more" href="settings.html">Usage and limits</a>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+let day = null, ws = null, ctx = null, mic = null, node = null, playHead = 0, sources = [], callId = null, poll = null;
+
+M.mount("talk.html");
+document.querySelectorAll("[data-ic]").forEach((el) => (el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : M.icon(el.dataset.ic)));
+document.querySelectorAll("[data-ic2]").forEach((el) => (el.innerHTML = M.icon(el.dataset.ic2)));
+setButton(false);
+
+function setStatus(text, tone = "") {
+  $("statusText").textContent = text;
+  $("status").className = `status ${tone}`;
+}
+
+function setButton(live) {
+  $("go").classList.toggle("live", live);
+  $("go").innerHTML = live ? `${M.icon("x")} End check-in` : `${M.icon("phone")} Start check-in`;
+}
+
+async function loadDay(date) {
+  try {
+    const d = await M.api("GET", `/api/day${date ? `?date=${date}` : ""}`);
+    if (d.setupGaps?.length) { location.href = "onboarding.html"; return; }
+    day = d;
+    $("date").value = d.project.planDate;
+    $("dateShown").textContent = M.fmtDay(d.project.planDate);
+    $("date").disabled = d.source === "sheet";
+    const sel = $("booking");
+    sel.innerHTML = d.project.activities.map((a) => {
+      const c = d.project.contacts.find((x) => x.id === a.contactId);
+      return c ? `<option value="${M.esc(a.id)}">${M.clock(a.start)}, ${M.esc(c.company)}</option>` : "";
+    }).join("");
+    if (!sel.options.length) {
+      sel.innerHTML = `<option value="">No bookings on this day</option>`;
+      $("details").innerHTML = `<span class="av">${M.icon("plan")}</span><span><b>Nothing booked on ${M.esc(M.shortDay(d.project.planDate))}</b><small>Add a booking on the <a href="plan.html?date=${d.project.planDate}&add=1" style="color:#2f5bea;font-weight:600">Plan</a> page first.</small></span>`;
+      $("go").disabled = true;
+      return;
+    }
+    $("go").disabled = false;
+    showDetails();
+  } catch (ex) {
+    setStatus(ex.message, "bad");
+  }
+}
+
+function showDetails() {
+  const a = day.project.activities.find((x) => x.id === $("booking").value);
+  if (!a) return;
+  const c = day.project.contacts.find((x) => x.id === a.contactId);
+  $("details").innerHTML = `<span class="av">${M.esc(M.initials(c.company))}</span><span><b>${M.esc(c.company)}, ${M.esc(a.description)}</b><small>${M.esc(a.area)} &#183; ${M.clock(a.start)} to ${M.clock(a.end)} &#183; crew of ${a.crewNeeded} &#183; ${M.esc(c.foreman)} speaks ${c.language === "es" ? "Spanish" : "English"}</small></span>`;
+}
+
+async function start() {
+  $("transcript").innerHTML = "";
+  $("convoCard").hidden = false;
+  $("callLink").hidden = true;
+  setStatus("Connecting.");
+  let limitMessage = "";
+  try {
+    ctx = new AudioContext();
+    await ctx.audioWorklet.addModule("mic-worklet.js");
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+  } catch (ex) {
+    cleanup(ex.name === "NotAllowedError" ? "Microphone access was blocked. Allow it in the browser's address bar, then try again." : `Could not start audio: ${ex.message}`, "bad");
+    return;
+  }
+  const src = ctx.createMediaStreamSource(mic);
+  node = new AudioWorkletNode(ctx, "mic-capture");
+  src.connect(node);
+  // A worklet only runs while it is pulled by the graph; route it to a silent output.
+  const mute = ctx.createGain();
+  mute.gain.value = 0;
+  node.connect(mute).connect(ctx.destination);
+
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/browser/stream?activity=${encodeURIComponent($("booking").value)}&date=${day.project.planDate}`);
+  node.port.onmessage = (e) => {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "audio", audio: toBase64(e.data) }));
+  };
+  ws.onopen = () => { setStatus("Live. Muster will speak first.", "live"); setButton(true); };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === "audio") play(msg.audio);
+    else if (msg.type === "clear") stopPlayback();
+    else if (msg.type === "drain") afterPlayback(() => ws && ws.send(JSON.stringify({ type: "drained", id: msg.id })));
+    else if (msg.type === "limit") limitMessage = msg.message;
+    else if (msg.type === "call") { callId = msg.callId; poll = setInterval(refreshTranscript, 1500); }
+  };
+  ws.onclose = (e) => {
+    if (e.code === 4401) return cleanup("You were signed out. Sign in again to start a check-in.", "bad");
+    cleanup(limitMessage || "Check-in ended.", limitMessage ? "bad" : "");
+  };
+}
+
+function hangUp() {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "hangup" }));
+  cleanup("Check-in ended.");
+}
+
+function cleanup(message, tone = "") {
+  if (poll) { clearInterval(poll); poll = null; refreshTranscript(); }
+  stopPlayback();
+  if (mic) mic.getTracks().forEach((t) => t.stop());
+  if (ctx) ctx.close();
+  if (ws) { const w = ws; ws = null; try { w.close(); } catch {} }
+  mic = ctx = node = null;
+  setButton(false);
+  setStatus(message, tone);
+  if (callId) {
+    $("callLink").href = `calls.html?id=${encodeURIComponent(callId)}`;
+    $("callLink").hidden = false;
+  }
+}
+
+function play(b64) {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const pcm = new Int16Array(bytes.buffer, 0, bytes.length >> 1);
+  const buf = ctx.createBuffer(1, pcm.length, 24000);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 0x8000;
+  const s = ctx.createBufferSource();
+  s.buffer = buf;
+  s.connect(ctx.destination);
+  playHead = Math.max(playHead, ctx.currentTime);
+  s.start(playHead);
+  playHead += buf.duration;
+  sources.push(s);
+  s.onended = () => { sources = sources.filter((x) => x !== s); };
+}
+
+function stopPlayback() {
+  sources.forEach((s) => { try { s.stop(); } catch {} });
+  sources = [];
+  playHead = 0;
+}
+
+function afterPlayback(fn) {
+  const wait = ctx ? Math.max(0, playHead - ctx.currentTime) * 1000 : 0;
+  setTimeout(fn, wait + 100);
+}
+
+async function refreshTranscript() {
+  if (!callId) return;
+  try {
+    const call = await M.api("GET", `/api/calls/${callId}`);
+    const who = day.project.contacts.find((c) => c.id === day.project.activities.find((a) => a.id === call.activityId)?.contactId)?.foreman || "Foreman";
+    $("transcript").innerHTML = call.turns.length
+      ? call.turns.map((t) => `<div class="turn ${t.role}"><small>${t.role === "agent" ? "Muster" : M.esc(who)}</small>${M.esc(t.text)}</div>`).join("")
+      : `<p class="empty" style="padding:10px">Waiting for the first words.</p>`;
+  } catch {}
+}
+
+function toBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+$("booking").addEventListener("change", showDetails);
+$("date").addEventListener("change", () => $("date").value && loadDay($("date").value));
+$("go").addEventListener("click", () => (ws ? hangUp() : start()));
+M.api("GET", "/api/usage").then((u) => {
+  $("usageText").textContent = u.blocked || `${u.minutes.used} of ${u.minutes.limit} call minutes used this month on the ${u.plan.name} plan. A check-in takes about 2 minutes.`;
+}).catch(() => {});
+
+loadDay(new URLSearchParams(location.search).get("date") || undefined);
+</script>
+</body>
+</html>

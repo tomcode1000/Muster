@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan · Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside data-shell-side></aside>
+  <div>
+    <div data-shell-top></div>
+    <div class="content">
+      <div class="main">
+        <div class="head">
+          <div>
+            <div class="eyebrow">Plan</div>
+            <h1 id="title">Who works where, tomorrow?</h1>
+            <p>Set your crew and bookings for the day. You can copy from another day, add new bookings, or edit existing ones.</p>
+          </div>
+          <div class="head-tools">
+            <div class="datebox">
+              <label><span id="dateIcon"></span><span id="dateLabel">Loading</span><input type="date" id="date" aria-label="Choose day"></label>
+              <span class="sep"></span>
+              <button class="step" id="prev" aria-label="Previous day"></button>
+              <button class="step" id="next" aria-label="Next day"></button>
+            </div>
+            <div style="position:relative" id="copyWrap">
+              <button class="ghost-btn" id="copyBtn"></button>
+              <div class="pop" id="copyPop" hidden>
+                <label for="copyFrom">Copy bookings from</label>
+                <div class="row"><input type="date" id="copyFrom"><button class="primary" id="copyGo" style="height:36px;padding:0 14px;box-shadow:none">Copy</button></div>
+                <p style="margin:8px 0 0;font-size:11px;color:#6b7390">Bookings already on this day are not duplicated.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="card list">
+          <div class="banner" id="sheetBanner" hidden></div>
+          <div class="toolbar">
+            <button class="primary" id="add"></button>
+            <div class="chips" id="chips" role="group" aria-label="Filter by status"></div>
+          </div>
+          <div class="bulk" id="bulk" hidden><span id="bulkCount"></span><span class="spacer"></span><button id="bulkDelete" class="danger">Delete selected</button><button id="bulkClear">Clear</button></div>
+          <div class="table-wrap">
+            <table class="grid">
+              <thead><tr>
+                <th style="width:34px"><input type="checkbox" class="cb" id="all" aria-label="Select all"></th>
+                <th>Time</th><th>Crew / Subcontractor</th><th>Work and area</th><th>Status</th><th style="text-align:right;padding-right:18px">Actions</th>
+              </tr></thead>
+              <tbody id="rows"><tr><td colspan="6" class="empty">Loading.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="foot"><span id="showing"></span><div class="pager" id="pager"></div></div>
+        </section>
+      </div>
+
+      <div class="side-col">
+        <section class="card sc">
+          <div class="sc-h"><span class="ic" id="icPlan"></span><b id="planCardTitle">Tomorrow's Plan</b></div>
+          <div class="nums">
+            <div><b id="nTotal" style="color:#0e1733">0</b><small>Total bookings</small></div>
+            <div><b id="nOk" style="color:#1f9463">0</b><small>Confirmed</small></div>
+            <div><b id="nAttn" style="color:#e0791a">0</b><small>Need attention</small></div>
+          </div>
+          <a class="more" href="today.html">Open Today <span id="icMore"></span></a>
+        </section>
+
+        <section class="card sc tip">
+          <div class="sc-h"><span class="ic" style="background:#fff" id="icTip"></span><b style="font-size:13px">Quick tip</b></div>
+          <p>Use "Copy from another day" to save time when tomorrow's plan looks like today's.</p>
+        </section>
+
+        <section class="card sc sheet-card" id="sheetCard">
+          <div class="sc-h">
+            <svg viewBox="0 0 24 24" style="width:30px;height:30px" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" fill="#23a566"/><path d="M8 9h8M8 13h8M8 17h8M12 9v8" stroke="#fff" stroke-width="1.4"/></svg>
+            <b style="font-size:13.5px">Google Sheet</b><span id="sheetTag"></span>
+          </div>
+          <p id="sheetText">Checking connection.</p>
+          <a class="more" id="sheetLink" href="onboarding.html?step=2">Connect a sheet</a>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="drawerRoot"></div>
+
+<script>
+const M = window.Muster;
+const $ = (id) => document.getElementById(id);
+const PAGE = 8;
+let state = { date: null, tomorrow: null, day: null, settings: null, snapshot: null, filter: "all", query: "", page: 1, selected: new Set() };
+
+M.mount("plan.html", { onSearch: (q) => { state.query = q; state.page = 1; draw(); } });
+
+// Static icons
+$("dateIcon").innerHTML = M.icon("plan", 'style="width:17px;height:17px"');
+$("prev").innerHTML = M.icon("chevLeft", 'style="width:15px;height:15px"');
+$("next").innerHTML = M.icon("chevRight", 'style="width:15px;height:15px"');
+$("copyBtn").innerHTML = `${M.icon("copy", 'style="width:15px;height:15px"')} Copy from another day`;
+$("add").innerHTML = `${M.icon("plus")} Add booking`;
+$("icPlan").innerHTML = M.icon("plan");
+$("icMore").innerHTML = M.icon("arrow", 'style="width:13px;height:13px"');
+$("icTip").innerHTML = M.icon("bulb");
+
+const isSheet = () => state.settings?.source === "sheet";
+const findingKey = (f) => `${f.code}:${f.activityIds.join(",")}`;
+
+async function load(date) {
+  try {
+    const [day, settingsRes] = await Promise.all([
+      M.api("GET", `/api/day${date ? `?date=${date}` : ""}`),
+      state.settings ? Promise.resolve(null) : M.api("GET", "/api/settings"),
+    ]);
+    if (settingsRes) { state.settings = settingsRes.settings; state.snapshot = settingsRes.sheet; }
+    if (day.setupGaps?.length) { location.href = "onboarding.html"; return; }
+    if (state.date !== day.project.planDate) state.selected.clear();
+    state.day = { handled: [], ...day };
+    state.date = day.project.planDate;
+    state.tomorrow = day.tomorrow;
+    const ids = new Set(day.project.activities.map((a) => a.id));
+    for (const id of state.selected) if (!ids.has(id)) state.selected.delete(id);
+    history.replaceState(null, "", `?date=${state.date}`);
+    drawHeader();
+    draw();
+    drawSheetCard();
+  } catch (ex) {
+    $("rows").innerHTML = `<tr><td colspan="6" class="empty">${M.esc(ex.message)}</td></tr>`;
+  }
+}
+
+function drawHeader() {
+  const d = state.date;
+  $("dateLabel").textContent = M.fmtDay(d);
+  $("date").value = d;
+  const today = M.addDays(state.tomorrow, -1);
+  const label = d === state.tomorrow ? "tomorrow" : d === today ? "today" : M.fmtDay(d).replace(/, \d{4}$/, "");
+  $("title").textContent = `Who works where, ${label}?`;
+  $("planCardTitle").textContent = d === state.tomorrow ? "Tomorrow's Plan" : d === today ? "Today's Plan" : `Plan for ${M.shortDay(d)}`;
+  $("prev").disabled = $("next").disabled = $("date").disabled = isSheet();
+  $("copyWrap").hidden = isSheet();
+  $("add").disabled = isSheet();
+  const banner = $("sheetBanner");
+  banner.hidden = !isSheet();
+  if (isSheet()) banner.innerHTML = `${M.icon("list", 'style="width:16px;height:16px"')}<span>Bookings come from the Tomorrow tab of your Google Sheet. Edit them there.</span><a href="#" id="refreshSheet">Refresh from sheet</a>`;
+}
+
+function rowsWithStatus() {
+  const { project, checkIns, findings, handled } = state.day;
+  const byActivity = Object.fromEntries(checkIns.map((c) => [c.activityId, c]));
+  const open = findings.filter((f) => !handled.includes(findingKey(f)));
+  const flagged = new Map();
+  for (const f of open) for (const id of f.activityIds) if (!flagged.has(id)) flagged.set(id, f);
+  return project.activities.map((a) => {
+    const contact = project.contacts.find((c) => c.id === a.contactId) || { company: a.contactId, foreman: "" };
+    const checkIn = byActivity[a.id];
+    const [cls, label] = M.statusOf(checkIn, flagged.has(a.id));
+    return { a, contact, checkIn, cls, label, finding: flagged.get(a.id) };
+  });
+}
+
+function draw() {
+  const all = rowsWithStatus();
+  const q = state.query;
+  const counts = all.reduce((m, r) => ((m[r.cls] = (m[r.cls] || 0) + 1), m), {});
+
+  // Chips: All, then every status that is present, in a fixed order.
+  const ORDER = [["confirmed", "Confirmed"], ["attention", "Needs attention"], ["notcoming", "Not coming"], ["oncall", "On call"], ["noanswer", "No answer"], ["notcalled", "Not called"]];
+  if (state.filter !== "all" && !counts[state.filter]) state.filter = "all";
+  $("chips").innerHTML = [`<button class="chip all ${state.filter === "all" ? "on" : ""}" data-f="all" aria-pressed="${state.filter === "all"}">All (${all.length})</button>`]
+    .concat(ORDER.filter(([k]) => counts[k]).map(([k, label]) => `<button class="chip ${k} ${state.filter === k ? "on" : ""}" data-f="${k}" aria-pressed="${state.filter === k}">${label} (${counts[k]})</button>`))
+    .join("");
+
+  const filtered = all.filter((r) => (state.filter === "all" || r.cls === state.filter) &&
+    (!q || [r.contact.company, r.contact.foreman, r.a.description, r.a.area].join(" ").toLowerCase().includes(q)));
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
+  state.page = Math.min(state.page, pages);
+  const slice = filtered.slice((state.page - 1) * PAGE, state.page * PAGE);
+
+  if (!all.length) {
+    $("rows").innerHTML = `<tr><td colspan="6" class="empty">${isSheet() ? "The Tomorrow tab has no bookings." : `Nothing booked for this day yet. <button class="link" data-act="new">Add a booking</button> or copy from another day.`}</td></tr>`;
+  } else if (!slice.length) {
+    $("rows").innerHTML = `<tr><td colspan="6" class="empty">No bookings match.</td></tr>`;
+  } else {
+    $("rows").innerHTML = slice.map(({ a, contact, checkIn, cls, label, finding }) => {
+      const lastCall = checkIn?.callIds?.at(-1);
+      const sel = state.selected.has(a.id);
+      return `<tr data-id="${M.esc(a.id)}">
+        <td><input type="checkbox" class="cb" data-sel ${sel ? "checked" : ""} aria-label="Select ${M.esc(contact.company)}" ${isSheet() ? "disabled" : ""}></td>
+        <td class="nowrap"><span class="t1">${M.clock(a.start)}</span><span class="t2">(${M.hours(a.start, a.end)})</span></td>
+        <td><span class="who"><span class="av">${M.esc(M.initials(contact.company))}</span><span><span class="t1">${M.esc(contact.company)}</span><span class="t2">${a.crewNeeded} crew</span></span></span></td>
+        <td><span class="t1" style="font-weight:500;color:#2d3a5c">${M.esc(a.description)}</span><span class="t2">${M.esc(a.area)}</span></td>
+        <td>${M.pill(cls, label)}</td>
+        <td><div class="acts">
+          <button class="icon-btn" data-act="edit" title="Edit" aria-label="Edit booking" ${isSheet() ? "disabled" : ""}>${M.icon("edit")}</button>
+          <button class="icon-btn" data-act="delete" title="Delete" aria-label="Delete booking" ${isSheet() ? "disabled" : ""}>${M.icon("trash")}</button>
+          <div style="position:relative" data-menu>
+            <button class="icon-btn plain" data-act="menu" aria-label="More actions" aria-haspopup="true">${M.icon("dots")}</button>
+            <div class="menu" hidden>
+              ${lastCall ? `<a href="calls.html?id=${M.esc(lastCall)}">Open call log</a>` : ""}
+              ${finding ? `<button data-act="handled" data-key="${M.esc(findingKey(finding))}">Mark handled</button>` : ""}
+              ${isSheet() ? "" : `<button data-act="duplicate">Copy to next day</button>`}
+              <a href="talk.html?date=${state.date}">Try this check-in</a>
+            </div>
+          </div>
+        </div></td>
+      </tr>`;
+    }).join("");
+  }
+
+  $("showing").textContent = filtered.length ? `Showing ${(state.page - 1) * PAGE + 1} to ${(state.page - 1) * PAGE + slice.length} of ${filtered.length} ${filtered.length === 1 ? "booking" : "bookings"}` : "";
+  $("pager").innerHTML = pages > 1
+    ? `<button data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""} aria-label="Previous page">${M.icon("chevLeft", 'style="width:13px;height:13px"')}</button>` +
+      Array.from({ length: pages }, (_, i) => `<button data-page="${i + 1}" class="${state.page === i + 1 ? "on" : ""}">${i + 1}</button>`).join("") +
+      `<button data-page="${state.page + 1}" ${state.page === pages ? "disabled" : ""} aria-label="Next page">${M.icon("chevRight", 'style="width:13px;height:13px"')}</button>`
+    : "";
+
+  $("all").checked = slice.length > 0 && slice.every((r) => state.selected.has(r.a.id));
+  $("all").disabled = isSheet();
+  $("bulk").hidden = state.selected.size === 0;
+  $("bulkCount").textContent = `${state.selected.size} selected`;
+
+  $("nTotal").textContent = all.length;
+  $("nOk").textContent = counts.confirmed || 0;
+  const attention = all.filter((r) => r.finding).length;
+  $("nAttn").textContent = attention;
+  M.setAttentionDot(attention > 0);
+}
+
+function drawSheetCard() {
+  const s = state.settings;
+  const connected = s.source === "sheet" && s.sheet.url;
+  $("sheetTag").innerHTML = connected ? `<span class="status-tag ok">${M.icon("check", 'style="width:11px;height:11px;stroke-width:2.6"')} Connected</span>` : `<span class="status-tag off">Not connected</span>`;
+  if (connected) {
+    const when = state.snapshot?.readAt ? M.timeOf(state.snapshot.readAt) : null;
+    $("sheetText").textContent = when ? `Read before every round and updated as calls finish. Last read at ${when}.` : "Connected. Refresh from the sheet to read your bookings.";
+    $("sheetLink").href = s.sheet.url;
+    $("sheetLink").target = "_blank";
+    $("sheetLink").rel = "noopener";
+    $("sheetLink").innerHTML = `View sheet ${M.icon("arrow", 'style="width:13px;height:13px"')}`;
+  } else {
+    $("sheetText").textContent = "Keep your crew and bookings in a Google Sheet instead, and Muster writes results back into it.";
+    $("sheetLink").innerHTML = `Connect a sheet ${M.icon("arrow", 'style="width:13px;height:13px"')}`;
+  }
+}
+
+// ---------------------------------------------------------------- Drawer
+async function openDrawer(existing) {
+  if (isSheet()) return;
+  const crew = await M.api("GET", "/api/crew").catch(() => []);
+  const all = state.day.project.activities;
+  const works = [...new Set(all.map((a) => a.description).concat(crew.map((c) => c.trade)))].filter(Boolean);
+  const areas = [...new Set(all.map((a) => a.area))].filter(Boolean);
+  const b = existing || { contactId: crew[0]?.id || "", description: "", area: "", start: "07:00", end: "15:00", crewNeeded: 4, requirements: [], materials: [], exclusiveArea: false };
+  const crewOptions = [2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50];
+  if (!crewOptions.includes(b.crewNeeded)) crewOptions.push(b.crewNeeded);
+  crewOptions.sort((x, y) => x - y);
+
+  $("drawerRoot").innerHTML = `
+    <div class="scrim" data-close></div>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+      <div class="drawer-h">
+        <div class="t">${M.icon("plan", 'class="big" style="width:24px;height:24px"')}<h2 id="dTitle">${existing ? "Edit booking" : "Add booking"}</h2><button class="x" data-close aria-label="Close">${M.icon("x")}</button></div>
+        <p>Fill in the details below. We'll check for conflicts and keep your plan on track.</p>
+      </div>
+      <form class="drawer-b" id="dForm" novalidate>
+        <div class="f"><label for="dContact">1. Subcontractor</label>
+          <div class="ctl"><span class="av" id="dAv">${M.esc(M.initials(crew.find((c) => c.id === b.contactId)?.company || ""))}</span>
+            <select id="dContact">${crew.length ? crew.map((c) => `<option value="${M.esc(c.id)}" ${c.id === b.contactId ? "selected" : ""}>${M.esc(c.company)}</option>`).join("") : `<option value="">Add a subcontractor on the Crew page first</option>`}</select>
+            ${M.icon("chevDown", 'class="chev"')}</div>
+        </div>
+        <div class="f"><label for="dWork">2. Work</label>
+          <div class="ctl">${M.icon("work")}<input id="dWork" list="worksList" maxlength="200" placeholder="e.g. Concrete pouring" value="${M.esc(b.description)}">${M.icon("chevDown", 'class="chev"')}</div>
+          <datalist id="worksList">${works.map((w) => `<option value="${M.esc(w)}">`).join("")}</datalist>
+        </div>
+        <div class="f"><label for="dArea">3. Area</label>
+          <div class="ctl">${M.icon("pin")}<input id="dArea" list="areasList" maxlength="200" placeholder="e.g. Level 1 west wing" value="${M.esc(b.area)}">${M.icon("chevDown", 'class="chev"')}</div>
+          <datalist id="areasList">${areas.map((w) => `<option value="${M.esc(w)}">`).join("")}</datalist>
+        </div>
+        <div class="split">
+          <div class="f"><span class="lbl">4. Start &amp; Finish</span>
+            <div class="ctl picker">${M.icon("plan")}<span class="shown" id="dDateShown">${M.esc(M.fmtDay(state.date))}</span>${M.icon("chevRight", 'class="end"')}<input type="date" id="dDate" value="${state.date}" aria-label="Day" required></div>
+            <div class="times">
+              <div class="ctl picker">${M.icon("clock")}<span class="shown" id="dStartShown">${M.clock(b.start)}</span><input type="time" id="dStart" value="${b.start}" aria-label="Start time" required></div>
+              <div class="ctl picker">${M.icon("clock")}<span class="shown" id="dEndShown">${M.clock(b.end)}</span><input type="time" id="dEnd" value="${b.end}" aria-label="Finish time" required></div>
+            </div>
+          </div>
+          <div class="f"><label for="dCrew">5. Crew needed</label>
+            <div class="ctl">${M.icon("crew")}<select id="dCrew">${crewOptions.map((n) => `<option value="${n}" ${n === b.crewNeeded ? "selected" : ""}>${n} crew</option>`).join("")}</select>${M.icon("chevDown", 'class="chev"')}</div>
+          </div>
+        </div>
+        <div class="f"><label for="dReq">6. Prerequisites <em>(optional)</em></label>
+          <div class="ctl" style="align-items:flex-start">${M.icon("list", 'style="margin-top:12px"')}<textarea id="dReq" rows="2" placeholder="One per line, e.g. Pump truck booked">${M.esc(b.requirements.map((r) => r.label).join("\n"))}</textarea></div>
+          <p style="margin:6px 0 0;font-size:10.5px;color:#8a90a2">Muster asks the foreman about each one on the call.</p>
+        </div>
+        <div class="split">
+          <div class="f"><label for="dMat">7. Materials <em>(optional)</em></label>
+            <div class="ctl">${M.icon("box")}<input id="dMat" placeholder="e.g. Concrete, rebar" value="${M.esc(b.materials.join(", "))}"></div>
+          </div>
+          <div class="f toggle-box"><span class="lbl">${M.icon("shield", 'style="width:15px;height:15px"')}<span style="flex:1">8. Area to themselves</span>
+            <label class="switch"><input type="checkbox" id="dEx" ${b.exclusiveArea ? "checked" : ""} aria-label="Needs the area to themselves"><span></span></label></span>
+            <small>Flags other bookings in this area at the same time.</small>
+          </div>
+        </div>
+        <div id="dConflict"></div>
+        <div id="dErrors"></div>
+      </form>
+      <div class="drawer-f">
+        <button class="btn-primary" id="dSave" form="dForm" type="submit">${existing ? "Save changes" : "Save booking"}</button>
+        <button class="btn-line" data-close type="button">Cancel</button>
+      </div>
+    </aside>`;
+
+  const root = $("drawerRoot");
+  const close = () => { root.innerHTML = ""; document.removeEventListener("keydown", onKey); $("add").focus(); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  root.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", close));
+  $("dContact").focus();
+  $("dContact").addEventListener("change", () => {
+    $("dAv").textContent = M.initials(crew.find((c) => c.id === $("dContact").value)?.company || "");
+  });
+
+  // Conflicts are checked against the bookings on the chosen day, as the engine would.
+  let dayBookings = all;
+  const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  const checkConflict = () => {
+    const area = $("dArea").value.trim().toLowerCase();
+    const s = $("dStart").value, e = $("dEnd").value, ex = $("dEx").checked;
+    const box = $("dConflict");
+    if (!area || !s || !e || toMin(e) <= toMin(s)) { box.innerHTML = ""; return; }
+    const clash = dayBookings.find((o) =>
+      o.id !== existing?.id && o.area.trim().toLowerCase() === area && (ex || o.exclusiveArea) &&
+      toMin(s) < toMin(o.end) && toMin(o.start) < toMin(e));
+    if (!clash) { box.innerHTML = ""; return; }
+    const who = state.day.project.contacts.find((c) => c.id === clash.contactId)?.company || "another booking";
+    box.innerHTML = `<div class="conflict" role="status">${M.icon("warn", 'style="width:20px;height:20px;color:#e08a1f"')}<span><b>Possible conflict</b><small>This booking overlaps with ${M.esc(who)} (${M.clock(clash.start)} to ${M.clock(clash.end)}) in ${M.esc(clash.area)}.</small></span><button type="button" data-view="${M.esc(clash.id)}">View details ${M.icon("arrow", 'style="width:12px;height:12px;display:inline"')}</button></div>`;
+    box.querySelector("[data-view]").addEventListener("click", () => {
+      const id = clash.id;
+      close();
+      const row = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+      if (row) { row.scrollIntoView({ block: "center", behavior: "smooth" }); row.classList.add("flash"); setTimeout(() => row.classList.remove("flash"), 1800); }
+    });
+  };
+  ["dArea", "dStart", "dEnd"].forEach((id) => $(id).addEventListener("input", checkConflict));
+  $("dStart").addEventListener("input", () => ($("dStartShown").textContent = M.clock($("dStart").value)));
+  $("dEnd").addEventListener("input", () => ($("dEndShown").textContent = M.clock($("dEnd").value)));
+  $("dDate").addEventListener("input", () => ($("dDateShown").textContent = $("dDate").value ? M.fmtDay($("dDate").value) : "Choose a day"));
+  $("dEx").addEventListener("change", checkConflict);
+  $("dDate").addEventListener("change", async () => {
+    const d = $("dDate").value;
+    if (!d) return;
+    dayBookings = d === state.date ? all : (await M.api("GET", `/api/day?date=${d}`).catch(() => ({ project: { activities: [] } }))).project.activities;
+    checkConflict();
+  });
+  checkConflict();
+
+  $("dForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const body = {
+      date: $("dDate").value,
+      contactId: $("dContact").value,
+      description: $("dWork").value,
+      area: $("dArea").value,
+      start: $("dStart").value,
+      end: $("dEnd").value,
+      crewNeeded: Number($("dCrew").value),
+      requirements: $("dReq").value,
+      materials: $("dMat").value,
+      exclusiveArea: $("dEx").checked,
+    };
+    $("dSave").disabled = true;
+    try {
+      if (existing) await M.api("PUT", `/api/bookings/${existing.id}`, body);
+      else await M.api("POST", "/api/bookings", body);
+      close();
+      M.toast(existing ? "Booking updated." : "Booking added.");
+      load(body.date);
+    } catch (ex) {
+      $("dErrors").innerHTML = `<div class="errors" role="alert">${ex.errors.map(M.esc).join("<br>")}</div>`;
+      $("dSave").disabled = false;
+    }
+  });
+}
+
+// ---------------------------------------------------------------- Events
+$("add").addEventListener("click", () => openDrawer(null));
+$("prev").addEventListener("click", () => load(M.addDays(state.date, -1)));
+$("next").addEventListener("click", () => load(M.addDays(state.date, 1)));
+$("date").addEventListener("change", () => $("date").value && load($("date").value));
+$("copyBtn").addEventListener("click", (e) => { e.stopPropagation(); $("copyPop").hidden = !$("copyPop").hidden; $("copyFrom").value = M.addDays(state.date, -1); });
+document.addEventListener("click", (e) => { if (!$("copyWrap").contains(e.target)) $("copyPop").hidden = true; });
+$("copyGo").addEventListener("click", async () => {
+  try {
+    const { copied } = await M.api("POST", "/api/bookings/copy", { from: $("copyFrom").value, to: state.date });
+    $("copyPop").hidden = true;
+    M.toast(`${copied} ${copied === 1 ? "booking" : "bookings"} copied.`);
+    load(state.date);
+  } catch (ex) { M.toast(ex.message); }
+});
+$("chips").addEventListener("click", (e) => { const c = e.target.closest("[data-f]"); if (c) { state.filter = c.dataset.f; state.page = 1; draw(); } });
+$("pager").addEventListener("click", (e) => { const p = e.target.closest("[data-page]"); if (p && !p.disabled) { state.page = Number(p.dataset.page); draw(); } });
+$("all").addEventListener("change", () => {
+  document.querySelectorAll("#rows tr[data-id]").forEach((tr) => { $("all").checked ? state.selected.add(tr.dataset.id) : state.selected.delete(tr.dataset.id); });
+  draw();
+});
+$("bulkClear").addEventListener("click", () => { state.selected.clear(); draw(); });
+$("bulkDelete").addEventListener("click", async () => {
+  const n = state.selected.size;
+  if (!confirm(`Delete ${n} ${n === 1 ? "booking" : "bookings"}?`)) return;
+  for (const id of state.selected) await M.api("DELETE", `/api/bookings/${id}`).catch(() => {});
+  M.toast(`${n} ${n === 1 ? "booking" : "bookings"} deleted.`);
+  load(state.date);
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "refreshSheet") {
+    e.preventDefault();
+    try { await M.api("POST", "/api/sheet/refresh"); state.settings = null; M.toast("Sheet read."); load(); } catch (ex) { M.toast(ex.message); }
+    return;
+  }
+  const newBtn = e.target.closest('[data-act="new"]');
+  if (newBtn) return openDrawer(null);
+  const tr = e.target.closest("tr[data-id]");
+  if (!tr) return;
+  const id = tr.dataset.id;
+  const activity = state.day.project.activities.find((a) => a.id === id);
+  if (e.target.matches("[data-sel]")) { e.target.checked ? state.selected.add(id) : state.selected.delete(id); draw(); return; }
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const act = btn.dataset.act;
+  try {
+    if (act === "menu") { const m = btn.nextElementSibling; m.hidden = !m.hidden; return; }
+    if (act === "edit") return openDrawer(activity);
+    if (act === "delete") {
+      if (!confirm("Delete this booking?")) return;
+      await M.api("DELETE", `/api/bookings/${id}`);
+      M.toast("Booking deleted.");
+      return load(state.date);
+    }
+    if (act === "handled") {
+      const r = await M.api("POST", "/api/findings/handled", { date: state.date, key: btn.dataset.key });
+      state.day.handled = r.handled;
+      draw();
+      return M.toast("Marked as handled.");
+    }
+    if (act === "duplicate") {
+      const { id: _i, ...rest } = activity;
+      await M.api("POST", "/api/bookings", { ...rest, date: M.addDays(state.date, 1), requirements: activity.requirements.map((r) => r.label) });
+      return M.toast(`Copied to ${M.shortDay(M.addDays(state.date, 1))}.`);
+    }
+  } catch (ex) {
+    M.toast(ex.message);
+  }
+});
+
+// plan.html?add=1 opens the drawer straight away, for links such as "Book on this day".
+const params = new URLSearchParams(location.search);
+load(params.get("date") || undefined).then(() => { if (params.has("add") && state.day) openDrawer(null); });
+setInterval(() => { if (!$("drawerRoot").children.length && state.date) load(state.date); }, 30000);
+</script>
+</body>
+</html>

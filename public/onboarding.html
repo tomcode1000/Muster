@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up Muster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+  .progress { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: #8a90a2; }
+  .progress .track { position: relative; width: 78px; height: 2px; background: #dfe4f2; border-radius: 2px; }
+  .progress .fill { position: absolute; inset: 0 auto 0 0; background: var(--blue-2); border-radius: 2px; }
+  .progress .dots { position: absolute; inset: -3px 0; display: flex; justify-content: space-between; }
+  .progress .dots i { width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 1.5px solid #c8d0e6; }
+  .progress .dots i.on { background: var(--blue-2); border-color: var(--blue-2); }
+  .panel-top { display: flex; justify-content: space-between; align-items: center; }
+
+  .choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .choice button { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .choice button b { display: block; font-size: 12.5px; font-weight: 600; color: var(--navy); }
+  .choice button small { display: block; font-size: 10px; color: #8a90a2; margin-top: 2px; }
+  .choice button .ic { width: 28px; height: 28px; border-radius: 50%; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .choice button.on { border-color: #8fb0ff; background: #f4f7ff; box-shadow: 0 0 0 3px rgba(47, 91, 234, .08); }
+
+  .crew-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .crew-form > *, .crew-form .wide > * { min-width: 0; }
+  .crew-form .control input::placeholder { font-size: 12px; }
+  .choice button { grid-template-columns: 24px 1fr; padding: 10px; }
+  .choice button .ic { width: 24px; height: 24px; }
+  .choice { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .choice button { min-width: 0; }
+  .choice button > span:last-child { min-width: 0; }
+  .choice button b { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .choice button small { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crew-form .control { height: 38px; }
+  .crew-form .wide { grid-column: span 2; display: grid; grid-template-columns: minmax(0, 1fr) 96px 60px; gap: 8px; }
+  .add { height: 38px; border-radius: 10px; border: 0; background: #9cb8ff; color: #fff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+  .add:enabled { background: var(--blue-2); }
+  .people { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; }
+  .person { display: grid; grid-template-columns: 34px 1fr 20px; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid #f0f2f7; }
+  .person:first-child { border-top: 0; }
+  .person .av { width: 34px; height: 34px; border-radius: 50%; background: #e3eafc; color: var(--blue); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+  .person b { display: block; font-size: 12.5px; color: var(--navy); }
+  .person small { font-size: 10.5px; color: #8a90a2; }
+  .person button { border: 0; background: none; color: #8a90a2; cursor: pointer; padding: 2px; }
+  .person button svg { width: 14px; height: 14px; }
+  .people .count { display: flex; gap: 8px; align-items: center; padding: 9px 0 7px; border-top: 1px solid #f0f2f7; font-size: 11px; color: #8a90a2; }
+  .people .count svg { width: 13px; height: 13px; }
+  .people .empty { padding: 14px 0; font-size: 12px; color: #8a90a2; text-align: center; }
+
+  .group { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .group .gh { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .group .gh svg { width: 16px; height: 16px; color: var(--navy); }
+  .group .gb { margin-top: 10px; padding-left: 26px; }
+  .days { display: flex; flex-wrap: wrap; gap: 6px; }
+  .days button { min-width: 44px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 600; color: #4a5268; cursor: pointer; }
+  .days button.on { background: var(--blue-2); border-color: var(--blue-2); color: #fff; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two small { display: block; font-size: 11px; color: #6b7390; margin-bottom: 6px; }
+
+  .summary { margin-top: 16px; display: grid; gap: 10px; }
+  .srow { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+  .srow .ic { width: 40px; height: 40px; border-radius: 50%; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .srow b { display: block; font-size: 13px; color: var(--navy); }
+  .srow small { display: block; font-size: 11px; color: #6b7390; margin-top: 2px; }
+  .srow a { font-size: 12px; font-weight: 600; color: var(--blue); }
+
+  .sheet-card { position: absolute; width: 260px; padding: 18px; background: #fff; border: 1px solid #e9ebf2; border-radius: 16px; box-shadow: 0 30px 60px rgba(20, 28, 70, .1); }
+  .sheet-card h4 { display: flex; gap: 10px; align-items: center; margin: 0; font-size: 14px; }
+  .sheet-card p { font-size: 11.5px; color: #6b7390; line-height: 1.5; margin: 10px 0 12px; }
+  .sheet-card .control { height: 36px; margin-top: 8px; }
+  .sheet-card .btn-block { height: 38px; margin-top: 10px; border-radius: 10px; background: var(--blue-2); font-size: 12.5px; }
+  .sheet-card .result { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 11px; line-height: 1.45; display: none; }
+  .sheet-card .result.good { display: block; background: #e8f7ef; border: 1px solid #bfe8d1; color: #1f7a52; }
+  .sheet-card .result.bad { display: block; background: #fdeeee; border: 1px solid #f6c9ca; color: #b3363b; }
+  .sheet-grid { position: absolute; width: 170px; height: 140px; border-radius: 12px; background: #fff; border: 1px solid #e9ebf2; box-shadow: 0 20px 40px rgba(20, 28, 70, .06); background-image: linear-gradient(#eef0f5 1px, transparent 1px), linear-gradient(90deg, #eef0f5 1px, transparent 1px); background-size: 34px 22px; }
+
+  .sched-card { position: absolute; width: 250px; padding: 16px; background: #fff; border: 1px solid #e9ebf2; border-radius: 16px; box-shadow: 0 30px 60px rgba(20, 28, 70, .1); }
+  .sched-card h4 { margin: 0 0 12px; display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .sched-card h4 svg { color: var(--blue); }
+  .sched-card .it { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid #f0f2f7; }
+  .sched-card .it i { width: 34px; height: 34px; border-radius: 50%; background: #eaf0fe; color: var(--blue); display: grid; place-items: center; }
+  .sched-card .it b { display: block; font-size: 12px; }
+  .sched-card .it small { font-size: 10.5px; color: #6b7390; }
+
+  .done-card { position: absolute; width: 170px; height: 190px; border-radius: 20px; background: #fff; border: 1px solid #e9ebf2; box-shadow: 0 30px 60px rgba(20, 28, 70, .12); transform: rotate(-6deg); display: grid; place-items: center; }
+  .done-card .ring { width: 70px; height: 70px; border-radius: 50%; background: #eaf0fe; display: grid; place-items: center; }
+  .done-card .ring span { width: 44px; height: 44px; border-radius: 50%; background: #5b8cff; display: grid; place-items: center; }
+  .done-card .ring svg { width: 20px; height: 20px; stroke: #fff; }
+  .done-card .lines { width: 100px; display: grid; gap: 6px; }
+  .done-card .lines i { display: block; height: 6px; border-radius: 3px; background: #e8ebf4; }
+  .tick { position: absolute; width: 40px; height: 40px; border-radius: 50%; background: #1fb37a; display: grid; place-items: center; box-shadow: 0 10px 20px rgba(31, 179, 122, .35); }
+  .tick svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2.6; }
+  .success { position: absolute; display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 14px 16px; border-radius: 14px; background: #e9f8f0; border: 1px solid #c3ead5; color: #1f7a52; font-size: 11px; width: 240px; box-shadow: 0 20px 40px rgba(20, 28, 70, .06); }
+  .success b { display: block; font-size: 13px; color: #1a6e49; }
+  .success svg { width: 22px; height: 22px; }
+  .spark { position: absolute; width: 22px; height: 22px; stroke: var(--blue); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="bar">
+    <a class="brand" href="index.html" aria-label="Muster home"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</a>
+    <nav class="links" aria-label="Primary"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#how">How It Works</a><a href="index.html#pricing">Pricing</a><a href="index.html#faq">FAQ</a></nav>
+    <div class="auth"><a class="signin" href="signin.html">Sign In</a><a class="btn btn-sm" href="signup.html">Get Started <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  </div>
+</header>
+
+<main class="wrap page" id="page"></main>
+
+<script>
+const ICON = {
+  check: '<path d="M5 12l5 5L20 7"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.8.9 2.8 2.6 3 5.2"/>',
+  pin: '<path d="M12 21s7-6.2 7-12a7 7 0 00-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  moon: '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
+  building: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  tag: '<path d="M4 4h7l9 9-7 7-9-9z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  link: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7L12 6.3M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
+  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+  wave: '<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/>',
+  sheet: '<rect x="4" y="3" width="16" height="18" rx="2" fill="#23a566" stroke="none"/><path d="M8 9h8M8 13h8M8 17h8M12 9v8" stroke="#fff" stroke-width="1.4"/>',
+};
+const svg = (name, cls = "i", extra = "") => `<svg class="${cls}" viewBox="0 0 24 24" ${extra}>${ICON[name]}</svg>`;
+const BRAND = `<div class="brand"><svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>Muster</div>`;
+const DAYS = [[1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"]];
+const STEPS = [
+  ["Project", "Tell us about your work."],
+  ["Crew & Bookings", "Add your crew and how you book them."],
+  ["Calls", "Set up your call preferences."],
+  ["Finish", "You're all set!"],
+];
+const DONE_TEXT = ["Your project details are set.", "Your crew and booking source are set.", "Your call schedule is set.", ""];
+
+const page = document.getElementById("page");
+let state = { settings: null, serviceAccount: null, crew: [], step: 1, source: "app", userName: "" };
+
+async function api(method, url, body) {
+  const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    location.replace(`signin.html?next=${encodeURIComponent(location.pathname + location.search)}`);
+    throw new Error("Sign in to continue.");
+  }
+  if (!res.ok) throw new Error((data.errors && data.errors.join(". ")) || data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function clock12(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const suffix = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
+function daysText(days) {
+  const names = DAYS.filter(([d]) => days.includes(d)).map(([, n]) => n);
+  return names.length === 7 ? "Every day" : names.join(", ") || "No days";
+}
+
+function rail(step) {
+  return `<div class="rail">${STEPS.map(([title, sub], i) => {
+    const n = i + 1;
+    const cls = n < step ? "done" : n === step ? "now" : "";
+    const dot = n < step ? svg("check") : n;
+    const text = n < step ? DONE_TEXT[i] : sub;
+    return `<a class="${cls}" href="?step=${n}"><span class="dot">${dot}</span><span><b>${title}</b><small>${text}</small></span></a>`;
+  }).join("")}</div>`;
+}
+
+function progress(step) {
+  return `<div class="progress">${step} of 4<div class="track"><div class="fill" style="width:${((step - 1) / 3) * 100}%"></div><div class="dots">${[1, 2, 3, 4].map((n) => `<i class="${n <= step ? "on" : ""}"></i>`).join("")}</div></div></div>`;
+}
+
+async function saveSettings(patch) {
+  const next = structuredClone(state.settings);
+  for (const [key, value] of Object.entries(patch)) next[key] = typeof value === "object" && !Array.isArray(value) ? { ...next[key], ...value } : value;
+  const { settings } = await api("PUT", "/api/settings", next);
+  state.settings = settings;
+}
+
+function go(step) {
+  history.pushState(null, "", `?step=${step}`);
+  render(step);
+}
+
+// ---------------------------------------------------------------- Step 1
+function stepProject() {
+  const s = state.settings;
+  const fallbackName = (state.userName || "").split(/\s+/)[0];
+  const zones = Intl.supportedValuesOf ? Intl.supportedValuesOf("timeZone") : [s.project.timezone];
+  const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const chosen = s.project.name ? s.project.timezone : localZone || s.project.timezone;
+
+  page.innerHTML = `
+    <section class="copy">
+      <span class="pill"><i></i>Onboarding 1/4</span>
+      <h1>Tell us about<br><span class="grad">your project.</span></h1>
+      <p class="lede">Muster says your project name and your name at the start of every call, so foremen know who is asking.</p>
+      ${rail(1)}
+    </section>
+    <form class="panel" id="form" novalidate>
+      ${BRAND}
+      <h2>Your project details</h2>
+      <p class="sub">What are you working on? This is what your foremen will hear.</p>
+      <div class="field"><label for="name">Project name</label><div class="control">${svg("building")}<input id="name" maxlength="120" placeholder="e.g. Riverside Office Tower" value="${esc(s.project.name)}"></div></div>
+      <div class="field"><label for="super">Your name</label><div class="control">${svg("user")}<input id="super" maxlength="120" placeholder="The name foremen know you by" value="${esc(s.project.superintendent || fallbackName)}"></div></div>
+      <div class="field"><label for="tz">Time zone</label><div class="control">${svg("globe")}<select id="tz">${zones.map((z) => `<option ${z === chosen ? "selected" : ""}>${esc(z)}</option>`).join("")}</select><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:12px;color:#8a90a2;pointer-events:none"><path d="M6 9l6 6 6-6"/></svg></div><p class="hint">Calls are placed on this clock.</p></div>
+      <div class="error" id="error" role="alert"></div>
+      <button class="btn btn-block" type="submit">Continue ${svg("arrow")}</button>
+      <button class="skip" type="button" id="skip">Skip for now</button>
+    </form>
+    <section class="art" aria-hidden="true">
+      <div class="halo" style="width:420px;height:420px;left:0;top:90px"></div>
+      <div class="note" style="left:20px;top:60px">Let's set up<br>your project.<svg viewBox="0 0 34 34" style="margin:4px 0 0 70px"><path d="M4 4c14 0 22 8 24 24M28 28l-7-4M28 28l2-8"/></svg></div>
+      ${craneArt()}
+      <div class="sched-card" style="left:20px;top:330px;transform:rotate(-4deg);width:240px">
+        <h4>${svg("building")} Project</h4>
+        <div style="display:grid;gap:10px;font-size:11.5px;color:#4a5268">
+          <span style="display:flex;gap:10px;align-items:center">${svg("check", "i", 'style="color:#2f5bea"')} Every foreman called</span>
+          <span style="display:flex;gap:10px;align-items:center">${svg("check", "i", 'style="color:#2f5bea"')} Fewer manual checks</span>
+          <span style="display:flex;gap:10px;align-items:center">${svg("check", "i", 'style="color:#2f5bea"')} More time on site</span>
+        </div>
+      </div>
+    </section>`;
+
+  document.getElementById("skip").onclick = () => go(2);
+  document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const superintendent = document.getElementById("super").value.trim();
+    const err = document.getElementById("error");
+    if (!name) return void (err.textContent = "Add the project name.");
+    if (!superintendent) return void (err.textContent = "Add your name, so foremen know who is calling.");
+    try {
+      await saveSettings({ project: { name, superintendent, timezone: document.getElementById("tz").value } });
+      go(2);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  };
+}
+
+function craneArt() {
+  return `<svg viewBox="0 0 300 300" style="position:absolute;left:60px;top:110px;width:290px;height:290px">
+    <defs><linearGradient id="bld" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9d7ff"/><stop offset="1" stop-color="#a9bff8"/></linearGradient></defs>
+    <path d="M150 40V280" stroke="#7d9bf2" stroke-width="5"/>
+    <path d="M150 40H285M150 40H105" stroke="#7d9bf2" stroke-width="5" stroke-linecap="round"/>
+    <path d="M150 40l20 20M170 40l20 20M190 40l20 20M210 40l20 20M230 40l20 20M250 40l20 20" stroke="#9fb6f5" stroke-width="2"/>
+    <path d="M150 18V40M150 18l-45 22M150 18l135 22" stroke="#9fb6f5" stroke-width="2"/>
+    <path d="M250 42V110" stroke="#7d9bf2" stroke-width="1.6"/>
+    <rect x="240" y="110" width="20" height="14" rx="2" fill="#7d9bf2"/>
+    <path d="M150 90l12 12M150 130l12 12M150 170l12 12M150 210l12 12" stroke="#9fb6f5" stroke-width="2"/>
+    <rect x="175" y="120" width="95" height="160" rx="4" fill="url(#bld)" opacity=".9"/>
+    <g fill="#e7eeff" opacity=".9">${Array.from({ length: 6 }, (_, r) => Array.from({ length: 4 }, (_, c) => `<rect x="${183 + c * 21}" y="${132 + r * 24}" width="14" height="14" rx="1.5"/>`).join("")).join("")}</g>
+    <rect x="60" y="170" width="90" height="110" rx="4" fill="#d6e1ff" opacity=".85"/>
+    <g fill="#f1f5ff">${Array.from({ length: 4 }, (_, r) => Array.from({ length: 3 }, (_, c) => `<rect x="${70 + c * 26}" y="${182 + r * 23}" width="16" height="13" rx="1.5"/>`).join("")).join("")}</g>
+  </svg>`;
+}
+
+// ---------------------------------------------------------------- Step 2
+async function stepCrew() {
+  state.crew = await api("GET", "/api/crew").catch(() => []);
+  state.source = state.settings.source;
+
+  page.innerHTML = `
+    <section class="copy">
+      <span class="pill"><i></i>Onboarding 2/4</span>
+      <h1>How do you want<br><span class="grad">to add your crew?</span></h1>
+      <p class="lede">Enter your subcontractors here, or connect the Google Sheet you already keep. Either way, you'll be set up in minutes.</p>
+      ${rail(2)}
+    </section>
+    <form class="panel" id="form" novalidate>
+      ${BRAND}
+      <h2>Add your crew &amp; bookings.</h2>
+      <p class="sub">Choose where your subcontractors and tomorrow's bookings live.</p>
+      <div class="choice">
+        <button type="button" data-src="app" class="${state.source === "app" ? "on" : ""}"><span class="ic">${svg("user", "i", 'style="width:15px;height:15px"')}</span><span><b>Enter in Muster</b><small>Add subcontractors here</small></span></button>
+        <button type="button" data-src="sheet" class="${state.source === "sheet" ? "on" : ""}"><span class="ic" style="background:#fff">${googleG()}</span><span><b>Connect Google Sheet</b><small>Read from your spreadsheet</small></span></button>
+      </div>
+      <div id="sourceBody"></div>
+      <div class="error" id="error" role="alert"></div>
+      <button class="btn btn-block" type="submit">Continue ${svg("arrow")}</button>
+      <button class="skip" type="button" id="skip">Skip for now</button>
+    </form>
+    <section class="art" aria-hidden="false">
+      <div class="note" style="left:0;top:40px">You can also connect<br>your Google Sheet.<svg viewBox="0 0 34 34" style="margin:4px 0 0 90px"><path d="M4 4c14 0 22 8 24 24M28 28l-7-4M28 28l2-8"/></svg></div>
+      <div class="sheet-grid" style="left:150px;top:60px"></div>
+      <div class="sheet-card" style="left:10px;top:140px" id="sheetCard">
+        <h4>${svg("sheet", "i", 'style="width:20px;height:20px"')} Google Sheet</h4>
+        <p>Share your sheet with this address as an editor, then paste its link.</p>
+        <div class="control">${svg("mail")}<input id="saEmail" readonly value="${esc(state.serviceAccount || "Google access is not set up on this server")}"></div>
+        <div class="control">${svg("link")}<input id="sheetUrl" placeholder="Paste the Google Sheet link" value="${esc(state.settings.sheet.url)}"></div>
+        <button class="btn btn-block" type="button" id="checkSheet">Check connection</button>
+        <div class="result" id="sheetResult"></div>
+      </div>
+      <span class="chip" style="left:120px;top:470px;align-items:flex-start;max-width:200px"><span class="b">${svg("bulb")}</span><span style="font-size:10.5px;line-height:1.4">Make sure the sheet is shared with this email as an editor.</span></span>
+    </section>`;
+
+  const body = document.getElementById("sourceBody");
+  const drawBody = () => {
+    document.querySelectorAll(".choice button").forEach((b) => b.classList.toggle("on", b.dataset.src === state.source));
+    if (state.source === "sheet") {
+      body.innerHTML = `<div class="people" style="margin-top:16px"><div class="empty">Paste your sheet link in the Google Sheet card and press Check connection. Muster reads the Crew and Tomorrow tabs, and adds them if they are missing.</div></div>`;
+      return;
+    }
+    body.innerHTML = `
+      <p class="label" style="margin:18px 0 8px">Add subcontractors</p>
+      <div class="crew-form">
+        <div class="control">${svg("building")}<input id="c_company" placeholder="Company"></div>
+        <div class="control">${svg("user")}<input id="c_foreman" placeholder="Foreman name"></div>
+        <div class="wide">
+          <div class="control">${svg("phone")}<input id="c_phone" inputmode="tel" placeholder="Phone, with country code"></div>
+          <div class="control">${svg("tag")}<input id="c_trade" placeholder="Trade"></div>
+          <button class="add" type="button" id="addCrew">Add</button>
+        </div>
+        <div class="control" style="grid-column:span 2;height:36px">${svg("globe")}<select id="c_lang"><option value="en">Speaks English</option><option value="es">Speaks Spanish</option></select></div>
+      </div>
+      <div class="people" id="people"></div>`;
+    drawPeople();
+    document.getElementById("addCrew").onclick = addCrew;
+  };
+
+  document.querySelectorAll(".choice button").forEach((b) => (b.onclick = () => { state.source = b.dataset.src; drawBody(); }));
+  drawBody();
+
+  document.getElementById("checkSheet").onclick = checkSheet;
+  document.getElementById("skip").onclick = () => go(3);
+  document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const err = document.getElementById("error");
+    err.textContent = "";
+    try {
+      if (state.source === "sheet") {
+        const url = document.getElementById("sheetUrl").value.trim();
+        if (!url) return void (err.textContent = "Paste your Google Sheet link, or choose Enter in Muster.");
+        await saveSettings({ source: "sheet", sheet: { url } });
+      } else {
+        if (!state.crew.length) return void (err.textContent = "Add at least one subcontractor, or skip for now.");
+        await saveSettings({ source: "app" });
+      }
+      go(3);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  };
+}
+
+function drawPeople() {
+  const box = document.getElementById("people");
+  if (!box) return;
+  if (!state.crew.length) {
+    box.innerHTML = `<div class="empty">No subcontractors yet.</div>`;
+    return;
+  }
+  box.innerHTML = state.crew.map((c) => `
+    <div class="person">
+      <span class="av">${esc(c.company.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase())}</span>
+      <span><b>${esc(c.company)}</b><small>${esc(c.foreman)} &#183; ${esc(c.trade)} &#183; ${c.language === "es" ? "Spanish" : "English"}</small></span>
+      <button type="button" aria-label="Remove ${esc(c.company)}" data-id="${esc(c.id)}">${svg("x")}</button>
+    </div>`).join("") + `<div class="count">${svg("users")} ${state.crew.length} ${state.crew.length === 1 ? "subcontractor" : "subcontractors"} added</div>`;
+  box.querySelectorAll("button[data-id]").forEach((b) => (b.onclick = async () => {
+    try {
+      await api("DELETE", `/api/crew/${b.dataset.id}`);
+      state.crew = state.crew.filter((c) => c.id !== b.dataset.id);
+      drawPeople();
+    } catch (ex) {
+      document.getElementById("error").textContent = ex.message;
+    }
+  }));
+}
+
+async function addCrew() {
+  const v = (id) => document.getElementById(id).value.trim();
+  const err = document.getElementById("error");
+  err.textContent = "";
+  try {
+    const contact = await api("POST", "/api/crew", {
+      company: v("c_company"), foreman: v("c_foreman"), phone: v("c_phone"), trade: v("c_trade"), language: document.getElementById("c_lang").value,
+    });
+    state.crew.push(contact);
+    ["c_company", "c_foreman", "c_phone", "c_trade"].forEach((id) => (document.getElementById(id).value = ""));
+    document.getElementById("c_company").focus();
+    drawPeople();
+  } catch (ex) {
+    err.textContent = ex.message;
+  }
+}
+
+async function checkSheet() {
+  const result = document.getElementById("sheetResult");
+  const url = document.getElementById("sheetUrl").value.trim();
+  result.className = "result";
+  if (!url) {
+    result.className = "result bad";
+    result.textContent = "Paste the Google Sheet link first.";
+    return;
+  }
+  try {
+    state.source = "sheet";
+    document.querySelectorAll(".choice button").forEach((b) => b.classList.toggle("on", b.dataset.src === "sheet"));
+    await saveSettings({ source: "sheet", sheet: { url } });
+    const r = await api("POST", "/api/sheet/refresh");
+    result.className = "result good";
+    result.innerHTML = `<b style="display:flex;gap:6px;align-items:center">${svg("check", "i", 'style="width:14px;height:14px"')} Connection successful!</b>We found ${r.bookings} ${r.bookings === 1 ? "booking" : "bookings"} for ${esc(r.planDate)}${r.problems.length ? `, and ${r.problems.length} ${r.problems.length === 1 ? "row needs" : "rows need"} attention` : ""}.`;
+  } catch (ex) {
+    result.className = "result bad";
+    result.textContent = ex.message;
+  }
+}
+
+function googleG() {
+  return `<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6a5.1 5.1 0 01-2.2 3.4v2.8h3.6c2.1-2 3.2-4.9 3.2-8.2z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 010-4.2V7H2.1a11 11 0 000 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 002.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>`;
+}
+
+// ---------------------------------------------------------------- Step 3
+function stepCalls() {
+  const sc = structuredClone(state.settings.schedule);
+  const times = [];
+  for (let h = 6; h <= 22; h++) for (const m of [0, 30]) times.push(`${String(h).padStart(2, "0")}:${m ? "30" : "00"}`);
+  const opts = (sel) => times.map((t) => `<option value="${t}" ${t === sel ? "selected" : ""}>${clock12(t)}</option>`).join("");
+
+  page.innerHTML = `
+    <section class="copy">
+      <span class="pill"><i></i>Onboarding 3/4</span>
+      <h1>Set up your<br><span class="grad">evening calls.</span></h1>
+      <p class="lede">Choose when Muster calls your foremen, the days of the week, and the hours nobody should be rung outside of.</p>
+      ${rail(3)}
+    </section>
+    <form class="panel" id="form" novalidate>
+      <div class="panel-top">${BRAND}${progress(3)}</div>
+      <h2>When should we call<br>your foremen?</h2>
+      <p class="sub">Muster starts the round at your call time, and retries anyone who missed it.</p>
+      <div class="group"><div class="gh">${svg("clock")} Call time</div><div class="gb">
+        <div class="control">${svg("moon")}<select id="time">${opts(sc.time)}</select></div>
+        <p class="hint">The evening round starts at this time.</p></div></div>
+      <div class="group"><div class="gh">${svg("cal")} Days of the week</div><div class="gb">
+        <div class="days" id="days">${DAYS.map(([d, n]) => `<button type="button" data-d="${d}" class="${sc.days.includes(d) ? "on" : ""}">${n}</button>`).join("")}</div>
+        <p class="hint">Pick the evenings before a working day.</p></div></div>
+      <div class="group"><div class="gh">${svg("clock")} Calling hours</div><div class="gb">
+        <div class="two">
+          <div><small>Start time</small><div class="control">${svg("clock")}<select id="hs">${opts(sc.callingHours.start)}</select></div></div>
+          <div><small>End time</small><div class="control">${svg("clock")}<select id="he">${opts(sc.callingHours.end)}</select></div></div>
+        </div>
+        <p class="hint">No one is called outside these hours, retries included.</p></div></div>
+      <div class="error" id="error" role="alert"></div>
+      <button class="btn btn-block" type="submit" style="margin-top:14px">Continue ${svg("arrow")}</button>
+      <button class="skip" type="button" id="skip">Skip for now</button>
+    </form>
+    <section class="art" aria-hidden="true">
+      <div class="sched-card" style="left:20px;top:110px" id="summaryCard"></div>
+      <div class="note" style="left:40px;top:430px;transform:rotate(-8deg)"><svg viewBox="0 0 34 34" style="position:absolute;left:-32px;top:-26px"><path d="M30 30C16 30 8 22 6 6M6 6l-2 8M6 6l7 4"/></svg>We'll run your evening<br>round automatically, based<br>on these settings.</div>
+      <span class="chip" style="left:90px;top:540px"><span class="b" style="background:#2f5bea;color:#fff">${svg("check")}</span>Your calls are scheduled<br>and ready to go!</span>
+    </section>`;
+
+  const read = () => ({
+    time: document.getElementById("time").value,
+    days: [...document.querySelectorAll("#days button.on")].map((b) => Number(b.dataset.d)),
+    start: document.getElementById("hs").value,
+    end: document.getElementById("he").value,
+  });
+  const drawSummary = () => {
+    const r = read();
+    document.getElementById("summaryCard").innerHTML = `
+      <h4>${svg("cal")} Your Evening Call Schedule</h4>
+      <div class="it"><i>${svg("moon")}</i><span><b>Call time</b><small>${clock12(r.time)}</small></span></div>
+      <div class="it"><i>${svg("cal")}</i><span><b>Days</b><small>${daysText(r.days)}</small></span></div>
+      <div class="it"><i>${svg("clock")}</i><span><b>Calling hours</b><small>${clock12(r.start)} to ${clock12(r.end)}</small></span></div>`;
+  };
+  document.querySelectorAll("#days button").forEach((b) => (b.onclick = () => { b.classList.toggle("on"); drawSummary(); }));
+  ["time", "hs", "he"].forEach((id) => (document.getElementById(id).onchange = drawSummary));
+  drawSummary();
+
+  document.getElementById("skip").onclick = () => go(4);
+  document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const r = read();
+    const err = document.getElementById("error");
+    if (!r.days.length) return void (err.textContent = "Pick at least one day.");
+    try {
+      await saveSettings({
+        schedule: { ...state.settings.schedule, enabled: true, time: r.time, days: r.days, callingHours: { start: r.start, end: r.end } },
+      });
+      go(4);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  };
+}
+
+// ---------------------------------------------------------------- Step 4
+async function stepFinish() {
+  const s = state.settings;
+  // Reaching the end counts as set up, so nobody is walked through this twice.
+  api("POST", "/api/auth/onboarded").catch(() => {});
+  const crew = s.source === "app" ? await api("GET", "/api/crew").catch(() => []) : [];
+  const crewText = s.source === "sheet"
+    ? "From your Google Sheet"
+    : `${crew.length} ${crew.length === 1 ? "subcontractor" : "subcontractors"} &#183; Add bookings on the Plan page`;
+
+  page.innerHTML = `
+    <section class="copy">
+      <span class="pill"><i></i>Onboarding 4/4</span>
+      <h1>You're <span class="grad">all set!</span></h1>
+      <p class="lede">Here's a quick summary of your setup. You can change any of it later in your settings.</p>
+      ${rail(4)}
+    </section>
+    <div class="panel">
+      ${BRAND}
+      <h2>All set, you're ready to go!</h2>
+      <p class="sub">Your evening check-in calls are set up. Add tomorrow's bookings, and Muster handles the rest.</p>
+      <div class="summary">
+        <div class="srow"><span class="ic">${svg("building")}</span><span><b>Project</b><small>${esc(s.project.name || "Not set yet")}${s.project.superintendent ? ` &#183; ${esc(s.project.superintendent)}` : ""}</small></span><a href="?step=1">Edit</a></div>
+        <div class="srow"><span class="ic">${svg("users")}</span><span><b>Crew &amp; Bookings</b><small>${crewText}</small></span><a href="?step=2">Edit</a></div>
+        <div class="srow"><span class="ic">${svg("phone")}</span><span><b>Call Schedule</b><small>${s.schedule.enabled ? `${clock12(s.schedule.time)} &#183; ${daysText(s.schedule.days)}` : "Automatic calls are off"}</small></span><a href="?step=3">Edit</a></div>
+        <div class="srow"><span class="ic">${svg("cal")}</span><span><b>Calling Hours</b><small>${clock12(s.schedule.callingHours.start)} to ${clock12(s.schedule.callingHours.end)}</small></span><a href="?step=3">Edit</a></div>
+      </div>
+      <a class="btn btn-block" href="today.html">Go to Dashboard ${svg("arrow")}</a>
+      <a class="skip" href="settings.html">View settings</a>
+    </div>
+    <section class="art" aria-hidden="true">
+      <div class="note" style="left:20px;top:70px">Your evening check-in<br>calls are now active!<svg viewBox="0 0 34 34" style="margin:2px 0 0 80px"><path d="M4 4c14 0 22 8 24 24M28 28l-7-4M28 28l2-8"/></svg></div>
+      <svg class="spark" viewBox="0 0 22 22" style="left:250px;top:170px"><path d="M4 18L12 4M10 20l10-8"/></svg>
+      <svg class="spark" viewBox="0 0 22 22" style="left:40px;top:300px"><path d="M2 8l14 6M4 18h14"/></svg>
+      <div class="done-card" style="left:90px;top:200px">
+        <div style="display:grid;gap:14px;justify-items:center">
+          <div class="ring"><span>${svg("phone")}</span></div>
+          <svg viewBox="0 0 24 24" style="width:22px;height:18px"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" stroke="#2f5bea" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          <div class="lines"><i></i><i style="width:70%"></i></div>
+        </div>
+      </div>
+      <span class="tick" style="left:240px;top:350px">${svg("check")}</span>
+      <div class="success" style="left:40px;top:430px"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1fb37a" stroke="none"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2"/></svg><span><b>Setup complete!</b>You're ready to start your evening check-ins.</span></div>
+    </section>`;
+}
+
+// ---------------------------------------------------------------- Router
+async function render(step) {
+  state.step = step;
+  document.title = `Set up Muster: step ${step} of 4`;
+  window.scrollTo(0, 0);
+  try {
+    if (step === 1) stepProject();
+    else if (step === 2) await stepCrew();
+    else if (step === 3) stepCalls();
+    else await stepFinish();
+  } catch (ex) {
+    page.innerHTML = `<div class="panel" style="grid-column:1/-1;max-width:520px;margin:40px auto"><h2>Something went wrong</h2><p class="sub">${esc(ex.message)}</p></div>`;
+  }
+}
+
+(async () => {
+  try {
+    const data = await api("GET", "/api/settings");
+    state.settings = data.settings;
+    state.serviceAccount = data.serviceAccount;
+    const auth = await api("GET", "/api/auth/status").catch(() => ({}));
+    state.userName = auth.user?.name || "";
+  } catch (ex) {
+    page.innerHTML = `<div class="panel" style="grid-column:1/-1;max-width:520px;margin:40px auto">${BRAND}<h2>Muster is not running</h2><p class="sub">Start the server with npm start, then reload this page.</p></div>`;
+    return;
+  }
+  const step = Math.min(4, Math.max(1, Number(new URLSearchParams(location.search).get("step")) || 1));
+  render(step);
+})();
+window.addEventListener("popstate", () => render(Math.min(4, Math.max(1, Number(new URLSearchParams(location.search).get("step")) || 1))));
+</script>
+</body>
+</html>
