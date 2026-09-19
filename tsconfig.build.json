@@ -1,0 +1,11 @@
+// Building for deployment: source only, no tests, emitted to dist/.
+//
+// A free instance has 512MB of memory, and running through ts-node means
+// holding the compiler and the whole program in that memory at boot, which
+// runs out. Compiling once at build time and serving plain JavaScript leaves
+// the memory for the calls.
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*"],
+  "exclude": ["test/**/*"]
+}

@@ -5,6 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "serve": "node dist/index.js",
     "calls": "ts-node src/campaign.ts",
     "reset-password": "ts-node src/reset-password.ts",
     "mail-test": "ts-node src/mail-test.ts",
@@ -29,5 +31,8 @@
   },
   "overrides": {
     "axios": "1.18.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

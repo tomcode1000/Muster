@@ -30,10 +30,13 @@ services:
     name: muster
     runtime: node
     plan: free
-    # ci installs what the lockfile pins. --include=dev because the start
-    # script runs through ts-node, which is a devDependency.
-    buildCommand: npm ci --include=dev
-    startCommand: npm start
+    # TypeScript is compiled here, once, rather than at every boot. Running
+    # through ts-node holds the compiler and the whole program in memory at
+    # startup, which a 512MB free instance does not survive: the first deploy
+    # died with "JavaScript heap out of memory". The built server starts in
+    # about 70MB. --include=dev because the compiler is a devDependency.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run serve
     healthCheckPath: /health
     envVars:
       # The address Twilio dials back on, and the one email links point to.
