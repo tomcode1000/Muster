@@ -105,8 +105,13 @@ export function hasAccounts(): boolean {
   return users().length > 0;
 }
 
+/** Reads a setting a person typed by hand, so True, YES and 1 all mean yes. */
+export function isOn(value: string | undefined): boolean {
+  return ["true", "yes", "on", "1"].includes(String(value ?? "").trim().toLowerCase());
+}
+
 export function signupOpen(): boolean {
-  return !hasAccounts() || process.env.MUSTER_OPEN_SIGNUP === "true";
+  return !hasAccounts() || isOn(process.env.MUSTER_OPEN_SIGNUP);
 }
 
 function checkPassword(password: unknown): string {

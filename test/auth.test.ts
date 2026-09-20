@@ -150,3 +150,8 @@ test("a server that cannot send mail does not demand a confirmation", () => {
     delete process.env.MUSTER_OPEN_SIGNUP;
   }
 });
+
+test("a setting typed by hand is read generously", () => {
+  for (const yes of ["true", "True", " TRUE ", "yes", "on", "1"]) assert.equal(auth.isOn(yes), true, yes);
+  for (const no of ["false", "False", "no", "0", "", undefined]) assert.equal(auth.isOn(no), false, String(no));
+});
