@@ -165,13 +165,14 @@ async function sendVerification(user: User, req: express.Request) {
   const url = `${base}/verify.html?token=${token}`;
   const result = await sendMail({
     to: user.email,
-    subject: "Confirm your email for Muster",
+    subject: "Confirm your email address",
     ...linkMessage({
-      heading: "Confirm your email",
-      line: `Hi ${xml(user.name.split(/\s+/)[0])}, confirm this address to finish setting up Muster.`,
-      button: "Confirm email",
+      heading: "Confirm your email address",
+      line: `Hello ${xml(user.name.split(/\s+/)[0])}, thank you for creating a Muster account. Confirm this address to finish setting it up.`,
+      button: "Confirm my email",
       url,
-      footer: "This link works for 24 hours. If you did not create a Muster account, ignore this message.",
+      note: "Once confirmed you will be signed in, and Muster will walk you through your project, your crew and when calls should go out.",
+      footer: "This link expires in 24 hours. If you did not create an account, no action is needed and nothing further will be sent.",
     }),
   });
   // A developer without a mail provider still needs a way in.

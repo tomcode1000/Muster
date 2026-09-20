@@ -25,10 +25,11 @@ sendMail({
   to,
   subject: "Muster test message",
   ...linkMessage({
-    heading: "Muster can send email",
-    line: "This is a test message. If it reached you, confirmation links and password resets will too.",
+    heading: "Your mail settings are working",
+    line: "Muster sent this message to check how it sends mail. Because it reached you, confirmation links and password resets will reach the people who sign up.",
     button: "Open Muster",
     url: base,
+    note: "Nothing else was sent, and no account was created by this test.",
     footer: `Sent from ${process.env.MUSTER_MAIL_FROM}.`,
   }),
 }).then((result) => {
