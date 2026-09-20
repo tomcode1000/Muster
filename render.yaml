@@ -60,7 +60,13 @@ services:
         sync: false
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
-      # Set to "true" only while showing Muster to people who need their own
+      # Traffic is what stops a free instance sleeping, and a sleeping process
+      # places no calls, so the server asks for its own health endpoint on a
+      # timer. An outside monitor is still worth having: this cannot wake a
+      # process that is already asleep.
+      - key: MUSTER_KEEP_AWAKE
+        value: "true"
+      # Set to "true" while showing Muster to people who need their own
       # account. With the data kept, the first sign up owns the workspace.
       - key: MUSTER_OPEN_SIGNUP
         value: "false"

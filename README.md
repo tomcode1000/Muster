@@ -47,7 +47,7 @@ Two things about Muster shape that file, and they are worth knowing before you p
 
 Twilio holds a media stream open for the length of every call, so Muster has to be a service that stays up, not a function that answers one request. The evening round is driven by a timer inside that same process, so an instance asleep at call time places no calls. That rules out serverless hosts.
 
-The blueprint uses the free instance, which needs no card. It sleeps after about fifteen minutes idle, so point a free uptime service at `/health` every ten minutes to keep it awake: a month is 720 hours and the free allowance is 750 instance hours, so one always awake service fits.
+The blueprint uses the free instance, which needs no card. It sleeps after about fifteen minutes idle, and a sleeping process places no calls, so `MUSTER_KEEP_AWAKE` is set: the server asks for its own health endpoint every ten minutes. A month is 720 hours and the free allowance is 750 instance hours, so one always awake service fits. That cannot wake a process that is already asleep, so also point a free uptime monitor at `/health`, which covers the gap after a deploy.
 
 It also has no disk, so `data/` is wiped on every deploy and restart. Muster handles that rather than losing the workspace: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (free at upstash.com, no card) and the data directory is mirrored to that store after every write, then restored at boot. Local files always win, so a machine with a real disk is never overwritten by the mirror.
 

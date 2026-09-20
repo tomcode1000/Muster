@@ -67,6 +67,7 @@ import {
 } from "./auth";
 import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
+import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const xml = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
@@ -913,6 +914,9 @@ async function start() {
 
   startSheetMirror();
   startScheduler();
+
+  const awake = startKeepAwake();
+  if (awake.started) console.log(`Keeping this instance awake by calling ${publicBase()}/health every few minutes`);
 
   app.listen(port, () => {
     console.log(`Muster running on http://localhost:${port}`);
