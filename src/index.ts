@@ -149,7 +149,9 @@ function authFailure(res: express.Response, e: unknown) {
 app.get("/api/auth/status", (req, res) => {
   const user = sessionUser(req);
   const publicUser = user ? { ...toPublic(user), emailVerified: isConfirmed(user, mailConfigured()) } : null;
-  res.json({ user: publicUser, hasAccounts: hasAccounts(), signupOpen: signupOpen() });
+  // Whether a new account will be asked to confirm, which the sign up page says
+  // out loud and an operator can check without creating an account.
+  res.json({ user: publicUser, hasAccounts: hasAccounts(), signupOpen: signupOpen(), emailConfirmation: mailConfigured() });
 });
 
 /** Where someone belongs after signing in: confirm, set up, or straight to work. */

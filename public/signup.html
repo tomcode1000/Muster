@@ -113,6 +113,13 @@
 
   fetch("/api/auth/status").then((r) => r.json()).then((s) => {
     if (s.user) return location.replace(nextPage("today.html"));
+    if (s.emailConfirmation) {
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.style.marginTop = "10px";
+      hint.textContent = "We will email you a link to confirm your address.";
+      document.getElementById("agree").closest("label").after(hint);
+    }
     if (!s.signupOpen) {
       say("This workspace already has an owner. Sign in, or ask the owner for access.");
       $("submit").disabled = true;
