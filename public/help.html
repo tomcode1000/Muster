@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="app.css">
 <script src="shell.js"></script>
 <style>
+  .wide-rail { grid-template-columns: minmax(0, 1fr) 400px; }
+  @media (max-width: 1180px) { .wide-rail { grid-template-columns: 1fr; } }
   .finder-in.page { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
   .topics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
   .topic { padding: 18px; }
@@ -66,7 +68,7 @@
   <aside data-shell-side></aside>
   <div>
     <div data-shell-top></div>
-    <div class="content" style="grid-template-columns:minmax(0,1fr) 400px">
+    <div class="content wide-rail">
       <div class="main">
         <a class="back" href="settings.html" id="backLink"></a>
         <div class="head"><div>

@@ -37,6 +37,7 @@
     building: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
     chart: '<path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/>',
     log: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   };
   const icon = (name, attrs = "") => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${attrs}>${ICONS[name] || ""}</svg>`;
   const BRAND = '<svg viewBox="0 0 32 28" aria-hidden="true"><g fill="#2f5bea"><rect x="0" y="10" width="3.4" height="8" rx="1.7"/><rect x="7" y="4" width="3.4" height="20" rx="1.7"/><rect x="14" y="0" width="3.4" height="28" rx="1.7"/><rect x="21" y="6" width="3.4" height="16" rx="1.7"/><rect x="28" y="11" width="3.4" height="6" rx="1.7"/></g></svg>';
@@ -140,6 +141,7 @@
     top.className = "top";
     const mac = /Mac|iPhone|iPad/.test(navigator.platform);
     top.innerHTML = `
+      <button class="burger" id="shellBurger" aria-label="Open menu" aria-expanded="false">${icon("menu")}</button>
       <label class="search">${icon("search", 'style="width:16px;height:16px;color:#6b7390"')}<input id="shellSearch" placeholder="Search crew, bookings or areas" aria-label="Search"><kbd>${mac ? "⌘ K" : "Ctrl K"}</kbd></label>
       <button class="bell" id="shellBell" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">${icon("bell")}<i id="shellDot" hidden></i></button>
       <div class="notif" id="shellNotif" hidden>
@@ -167,6 +169,7 @@
       }
     });
     mountNotifications();
+    mountPhoneNav(active, nav);
     const me = document.getElementById("shellMe");
     const menu = document.getElementById("shellMenu");
     const toggle = () => { menu.hidden = !menu.hidden; me.setAttribute("aria-expanded", String(!menu.hidden)); };
@@ -336,6 +339,44 @@
 
   function closeSearch() {
     if (searchBox) searchBox.hidden = true;
+  }
+
+  /**
+   * Phone navigation. The sidebar becomes a drawer, and the places used every
+   * day sit in a bar along the bottom where a thumb can reach them. Both are
+   * hidden by the stylesheet on anything wider than a handset.
+   */
+  function mountPhoneNav(active, nav) {
+    const side = document.querySelector(".side");
+    const burger = document.getElementById("shellBurger");
+
+    const scrim = document.createElement("button");
+    scrim.className = "side-scrim";
+    scrim.type = "button";
+    scrim.setAttribute("aria-label", "Close menu");
+    document.body.appendChild(scrim);
+
+    const setOpen = (open) => {
+      side.classList.toggle("open", open);
+      scrim.classList.toggle("on", open);
+      burger.setAttribute("aria-expanded", String(open));
+      document.body.style.overflow = open ? "hidden" : "";
+    };
+
+    burger.addEventListener("click", () => setOpen(!side.classList.contains("open")));
+    scrim.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+    // Following a link should not leave the drawer open behind the new page.
+    side.addEventListener("click", (e) => { if (e.target.closest("a")) setOpen(false); });
+
+    const tabs = document.createElement("nav");
+    tabs.className = "tabbar";
+    tabs.setAttribute("aria-label", "Sections");
+    tabs.innerHTML = `
+      ${nav.slice(0, 4).map(([href, ic, label]) => `<a href="${href}" class="${active === href ? "on" : ""}">${icon(ic)}${label}</a>`).join("")}
+      <button type="button" id="shellMore">${icon("menu")}More</button>`;
+    document.body.appendChild(tabs);
+    document.getElementById("shellMore").addEventListener("click", () => setOpen(true));
   }
 
   function setAttentionDot(on) {
