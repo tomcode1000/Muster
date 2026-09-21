@@ -76,6 +76,7 @@ services:
       #   MUSTER_RESEND_KEY       the same, but only to the account holder
       #   MUSTER_MAIL_FROM        Muster <you@gmail.com>
       #   MUSTER_SUPPORT_EMAIL
+      #   GOOGLE_SERVICE_ACCOUNT_JSON   the whole key, for reading sheets
       #   MUSTER_PLAN             free, pro or business
 
 # Keeping data through a deploy, when this stops being a demonstration:

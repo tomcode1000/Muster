@@ -20,12 +20,33 @@ const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
 let cached: { token: string; expiresAt: number } | null = null;
 
+/**
+ * Reads a service account key, however it was supplied.
+ *
+ * A deployment has no filesystem to keep a key file on, so the key travels as
+ * an environment variable instead: either the JSON itself or base64 of it.
+ * Pasting JSON into a dashboard usually turns the newlines inside the private
+ * key into a literal backslash and n, so those are turned back.
+ */
+export function parseServiceAccount(raw: string, source = "the service account key"): ServiceAccount {
+  const text = raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
+  let sa: ServiceAccount;
+  try {
+    sa = JSON.parse(text) as ServiceAccount;
+  } catch {
+    throw new Error(`${source} is not valid JSON`);
+  }
+  if (!sa.client_email || !sa.private_key) throw new Error(`${source} is not a service account key`);
+  return { ...sa, private_key: sa.private_key.replace(/\\n/g, "\n") };
+}
+
 function serviceAccount(): ServiceAccount {
+  const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_BASE64;
+  if (inline) return parseServiceAccount(inline, "GOOGLE_SERVICE_ACCOUNT_JSON");
+
   const file = process.env.GOOGLE_SERVICE_ACCOUNT_FILE;
-  if (!file) throw new Error("GOOGLE_SERVICE_ACCOUNT_FILE is not set");
-  const sa = JSON.parse(fs.readFileSync(file, "utf8")) as ServiceAccount;
-  if (!sa.client_email || !sa.private_key) throw new Error(`${file} is not a service account key`);
-  return sa;
+  if (!file) throw new Error("No Google key: set GOOGLE_SERVICE_ACCOUNT_JSON, or GOOGLE_SERVICE_ACCOUNT_FILE when running from a machine with the file");
+  return parseServiceAccount(fs.readFileSync(file, "utf8"), file);
 }
 
 export function serviceAccountEmail(): string | null {

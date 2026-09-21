@@ -59,6 +59,7 @@ After the first deploy, set these in the dashboard under **Environment**:
 | `ASSEMBLYAI_API_KEY` | your key |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | your Twilio credentials |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | the REST details of a free Upstash Redis database, so the data survives a deploy |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | the service account key itself, for reading sheets. A deployment has no file to point at |
 
 On Render nothing needs filling in: the platform sets `RENDER_EXTERNAL_URL` to the service's own address and Muster uses it. Set `MUSTER_PUBLIC_URL` only to override that, for a custom domain or a tunnel. With no usable address, phone calls are refused rather than dialled into nowhere, and the server says so at startup.
 
