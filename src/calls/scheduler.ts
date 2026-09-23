@@ -5,6 +5,10 @@
  * The scheduler checks the clock every 30 seconds rather than setting one long
  * timer, so a laptop that sleeps through the call time still runs the round
  * when it wakes, as long as calling hours have not ended.
+ *
+ * One timer serves every workspace on the server. Each is considered on its own
+ * clock, with its own call time, its own days and its own round in progress, so
+ * one account's evening does not hold up another's.
  */
 
 import { loadSettings, setupGaps, sheetIdFrom } from "../settings";
@@ -12,6 +16,7 @@ import { currentProject, refreshFromSheet } from "../source";
 import { readState, writeState } from "../store";
 import { localMoment, withinHours } from "../domain/zoned";
 import { runRound } from "./dialer";
+import { currentWorkspaceId, listWorkspaces, withWorkspace } from "../workspace-context";
 
 interface ScheduleState {
   lastRunDate: string | null;
@@ -23,26 +28,35 @@ interface ScheduleState {
 const STATE = "schedule-state";
 const TICK_MS = 30_000;
 
-let running = false;
-let stopRequested = false;
+/** A round in progress, and a request to stop it, per workspace. */
+const running = new Set<string>();
+const stopRequests = new Set<string>();
+
+const isRunning = () => running.has(currentWorkspaceId());
 
 export function scheduleState(): ScheduleState & { running: boolean; nextRun: string | null } {
   const state = load();
-  return { ...state, running, nextRun: describeNextRun(state) };
+  return { ...state, running: isRunning(), nextRun: describeNextRun(state) };
 }
 
 export function startScheduler() {
-  setInterval(() => tick().catch((e) => note(`Scheduler error: ${e.message}`)), TICK_MS);
-  tick().catch((e) => note(`Scheduler error: ${e.message}`));
+  const sweep = () => {
+    // A workspace with nothing in it has no directory yet, and nothing to call.
+    for (const id of listWorkspaces()) {
+      withWorkspace(id, () => tick().catch((e) => note(`Scheduler error: ${e.message}`)));
+    }
+  };
+  setInterval(sweep, TICK_MS);
+  sweep();
 }
 
 export function stopRound() {
-  if (running) stopRequested = true;
+  if (isRunning()) stopRequests.add(currentWorkspaceId());
 }
 
 async function tick() {
   const settings = loadSettings();
-  if (!settings.schedule.enabled || running) return;
+  if (!settings.schedule.enabled || isRunning()) return;
 
   const state = load();
   const now = localMoment(new Date(), settings.project.timezone);
@@ -71,9 +85,10 @@ async function tick() {
 
 /** Runs a round now. Used by the schedule and by the Run now button. */
 export async function startRound(opts: { refresh: boolean; reason: string; onlyActivityId?: string; date?: string }) {
-  if (running) throw new Error("A round is already running");
-  running = true;
-  stopRequested = false;
+  const workspace = currentWorkspaceId();
+  if (running.has(workspace)) throw new Error("A round is already running");
+  running.add(workspace);
+  stopRequests.delete(workspace);
   const settings = loadSettings();
   const state = load();
   state.lastRound = { startedAt: new Date().toISOString(), finishedAt: null, summary: opts.reason };
@@ -95,7 +110,7 @@ export async function startRound(opts: { refresh: boolean; reason: string; onlyA
       phone: settings.phone,
       onlyActivityId: opts.onlyActivityId,
       log: note,
-      shouldStop: () => stopRequested,
+      shouldStop: () => stopRequests.has(workspace),
     });
 
     const summary = `${result.called} called, ${result.reached} checked in, ${result.remaining} still open${result.stoppedReason ? `, stopped: ${result.stoppedReason}` : ""}`;
@@ -103,7 +118,7 @@ export async function startRound(opts: { refresh: boolean; reason: string; onlyA
 
     const after = load();
     after.lastRound = { startedAt: state.lastRound.startedAt, finishedAt: new Date().toISOString(), summary };
-    if (!opts.onlyActivityId && result.remaining > 0 && settings.schedule.enabled && !stopRequested && !result.limitReached) {
+    if (!opts.onlyActivityId && result.remaining > 0 && settings.schedule.enabled && !stopRequests.has(workspace) && !result.limitReached) {
       after.retryAt = new Date(Date.now() + settings.schedule.retryAfterMinutes * 60_000).toISOString();
     }
     save(after);
@@ -118,7 +133,8 @@ export async function startRound(opts: { refresh: boolean; reason: string; onlyA
     }
     throw e;
   } finally {
-    running = false;
+    running.delete(workspace);
+    stopRequests.delete(workspace);
   }
 }
 

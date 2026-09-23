@@ -83,9 +83,13 @@ The free plan is right for a demonstration and wrong for real use, because of th
 | `talk.html` | A check-in from the browser |
 | `settings.html` | Project, data source, agent, schedule, rounds, usage |
 
-## Accounts
+## Accounts and workspaces
 
 Every app screen and API needs a signed in user. The landing page, the auth screens and the Twilio routes stay public.
+
+A workspace holds one project: its crew, plan, check-ins, calls, settings and usage. Every account owns one, and the session decides which is in play for a request, so two accounts on the same server never see each other's work. Accounts and sessions live outside every workspace, because the session is what decides which workspace you are in.
+
+A phone call arrives with no session, so the workspace travels in the callback address Muster hands Twilio, and comes back in the media stream's first frame. The evening round runs on one timer that considers each workspace on its own clock.
 
 - The first account created owns the workspace, and sign up closes after it. Set `MUSTER_OPEN_SIGNUP=true` to let more people join the same workspace.
 - Passwords are hashed with scrypt. Sessions live in an HttpOnly cookie for 30 days with **Remember me**, 12 hours without it.
@@ -109,7 +113,7 @@ Limits are enforced on the server and set by `MUSTER_PLAN` in `.env`.
 
 ## Known limits
 
-- **Everyone shares one workspace.** Accounts see the same crew, plan and calls, and limits apply to the workspace.
+- **Each account owns a workspace.** Crew, plan, calls, settings and usage are separate, and nobody can see another account's data. The first account created keeps the original workspace, so an installation from before this existed is not stranded.
 - **Google sign in is not connected.** Use email and password.
 - **One project per workspace.**
 - **Data is stored as JSON files** in `data/`. On a host with no disk, set the Upstash keys and the directory is mirrored and restored automatically.

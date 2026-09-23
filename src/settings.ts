@@ -10,8 +10,9 @@ import { parseSheetId } from "./sheets/google";
 import { DEFAULT_PROFILE, validateProfile, type AgentProfile } from "./agent/profile";
 import { scheduleSave } from "./snapshot";
 
-const DATA_DIR = process.env.MUSTER_DATA_DIR || path.join(process.cwd(), "data");
-const FILE = path.join(DATA_DIR, "settings.json");
+import { workspaceDir } from "./workspace-context";
+
+const file = () => path.join(workspaceDir(), "settings.json");
 
 export interface Settings {
   project: {
@@ -81,7 +82,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function loadSettings(): Settings {
   try {
-    const saved = JSON.parse(fs.readFileSync(FILE, "utf8"));
+    const saved = JSON.parse(fs.readFileSync(file(), "utf8"));
     return validateSettings(saved).settings;
   } catch {
     return structuredClone(DEFAULT_SETTINGS);
@@ -91,10 +92,10 @@ export function loadSettings(): Settings {
 export function saveSettings(input: unknown): { settings: Settings; errors: string[] } {
   const result = validateSettings(input);
   if (result.errors.length === 0) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    const tmp = `${FILE}.${process.pid}.tmp`;
+    fs.mkdirSync(workspaceDir(), { recursive: true });
+    const tmp = `${file()}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(result.settings, null, 2));
-    fs.renameSync(tmp, FILE);
+    fs.renameSync(tmp, file());
     scheduleSave();
   }
   return result;

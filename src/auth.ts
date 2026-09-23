@@ -5,12 +5,13 @@
  * token held in an HttpOnly cookie; only its SHA-256 hash is stored, so a copy
  * of the data folder cannot be replayed as a login.
  *
- * Every account shares the one workspace. The first sign up creates the owner
- * and closes sign up, unless MUSTER_OPEN_SIGNUP is true.
+ * Every account owns a workspace: its own crew, plan, calls and settings. The
+ * first sign up takes the original workspace, so an installation that predates
+ * accounts is not stranded, and closes sign up unless MUSTER_OPEN_SIGNUP is on.
  */
 
 import * as crypto from "crypto";
-import { readState, writeState } from "./store";
+import { readGlobal, writeGlobal } from "./store";
 
 export interface User {
   id: string;
@@ -19,6 +20,8 @@ export interface User {
   passwordHash: string;
   role: "owner" | "member";
   createdAt: string;
+  /** The workspace this account works in: its own crew, plan, calls and settings. */
+  workspaceId: string;
   /** False until the address is confirmed. True from the start when this server cannot send email. */
   emailVerified: boolean;
   /** When the person finished setup, so they are only walked through it once. */
@@ -29,6 +32,7 @@ export interface PublicUser {
   id: string;
   name: string;
   email: string;
+  workspaceId: string;
   role: User["role"];
   emailVerified: boolean;
   onboarded: boolean;
@@ -70,8 +74,14 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /** Accounts made before verification existed are treated as already confirmed. */
 const users = (): User[] =>
-  (readState<User[]>("users") ?? []).map((u) => ({ ...u, emailVerified: u.emailVerified !== false, onboardedAt: u.onboardedAt ?? null }));
-const sessions = () => readState<Session[]>("sessions") ?? [];
+  (readGlobal<User[]>("users") ?? []).map((u) => ({
+    ...u,
+    emailVerified: u.emailVerified !== false,
+    onboardedAt: u.onboardedAt ?? null,
+    // Accounts made before workspaces existed stay in the original one.
+    workspaceId: u.workspaceId ?? "main",
+  }));
+const sessions = () => readGlobal<Session[]>("sessions") ?? [];
 const sha256 = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 const normalizeEmail = (email: unknown) => String(email ?? "").trim().toLowerCase();
 
@@ -79,6 +89,7 @@ export const toPublic = (u: User): PublicUser => ({
   id: u.id,
   name: u.name,
   email: u.email,
+  workspaceId: u.workspaceId,
   role: u.role,
   emailVerified: u.emailVerified,
   onboarded: Boolean(u.onboardedAt),
@@ -128,7 +139,7 @@ export function createUser(input: { name?: unknown; email?: unknown; password?: 
   if (name.length > 80) throw new AuthError("Use a name of at most 80 characters.");
   if (!EMAIL.test(email) || email.length > 254) throw new AuthError("Enter a valid email address.");
   const password = checkPassword(input.password);
-  if (!signupOpen()) throw new AuthError("This workspace already has an owner. Ask them to sign you in.", 403);
+  if (!signupOpen()) throw new AuthError("Sign up is closed on this server. Ask whoever runs it for an account.", 403);
 
   const all = users();
   if (all.some((u) => u.email === email)) throw new AuthError("An account with this email already exists. Sign in instead.", 409);
@@ -139,12 +150,15 @@ export function createUser(input: { name?: unknown; email?: unknown; password?: 
     passwordHash: hashPassword(password),
     role: all.length ? "member" : "owner",
     createdAt: new Date().toISOString(),
+    // The first account keeps the original workspace, so an existing
+    // installation is not stranded. Everyone after gets their own.
+    workspaceId: all.length ? `ws_${crypto.randomBytes(8).toString("hex")}` : "main",
     // Without a mail provider there is no way to confirm an address, so the
     // account starts confirmed rather than stranding the person on a dead screen.
     emailVerified: options.requireVerification !== true,
     onboardedAt: null,
   };
-  writeState("users", [...all, user]);
+  writeGlobal("users", [...all, user]);
   return user;
 }
 
@@ -154,22 +168,22 @@ export function markOnboarded(userId: string): User | null {
   const user = all.find((u) => u.id === userId);
   if (!user || user.onboardedAt) return user ?? null;
   user.onboardedAt = new Date().toISOString();
-  writeState("users", all);
+  writeGlobal("users", all);
   return user;
 }
 
 /** A link that proves the address exists, valid for a day. */
 export function createVerifyToken(userId: string, now = Date.now()): string {
   const token = crypto.randomBytes(32).toString("base64url");
-  const pending = (readState<VerifyToken[]>("email-verifications") ?? []).filter((v) => Date.parse(v.expiresAt) > now && v.userId !== userId);
+  const pending = (readGlobal<VerifyToken[]>("email-verifications") ?? []).filter((v) => Date.parse(v.expiresAt) > now && v.userId !== userId);
   pending.push({ tokenHash: sha256(token), userId, expiresAt: new Date(now + VERIFY_MS).toISOString() });
-  writeState("email-verifications", pending);
+  writeGlobal("email-verifications", pending);
   return token;
 }
 
 export function verifyEmail(token: unknown, now = Date.now()): User {
   const hash = sha256(String(token ?? ""));
-  const pending = readState<VerifyToken[]>("email-verifications") ?? [];
+  const pending = readGlobal<VerifyToken[]>("email-verifications") ?? [];
   const entry = pending.find((v) => v.tokenHash === hash && Date.parse(v.expiresAt) > now);
   if (!entry) throw new AuthError("This confirmation link has expired or was already used. Ask for a new one.", 400);
 
@@ -177,8 +191,8 @@ export function verifyEmail(token: unknown, now = Date.now()): User {
   const user = all.find((u) => u.id === entry.userId);
   if (!user) throw new AuthError("This account no longer exists.", 404);
   user.emailVerified = true;
-  writeState("users", all);
-  writeState("email-verifications", pending.filter((v) => v !== entry));
+  writeGlobal("users", all);
+  writeGlobal("email-verifications", pending.filter((v) => v !== entry));
   return user;
 }
 
@@ -217,7 +231,7 @@ export function startSession(userId: string, remember: boolean, now = Date.now()
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + maxAge).toISOString(),
   });
-  writeState("sessions", live);
+  writeGlobal("sessions", live);
   return { token, maxAge, persistent: remember };
 }
 
@@ -232,7 +246,7 @@ export function userForToken(token: string | undefined, now = Date.now()): User 
 export function endSession(token: string | undefined) {
   if (!token) return;
   const hash = sha256(token);
-  writeState("sessions", sessions().filter((s) => s.tokenHash !== hash));
+  writeGlobal("sessions", sessions().filter((s) => s.tokenHash !== hash));
 }
 
 /** Creates a one-time password reset token for an account, valid for 30 minutes. */
@@ -241,16 +255,16 @@ export function createResetToken(emailInput: string, now = Date.now()): { token:
   const user = users().find((u) => u.email === email);
   if (!user) throw new AuthError(`No account uses ${email}.`, 404);
   const token = crypto.randomBytes(32).toString("base64url");
-  const pending = (readState<ResetToken[]>("password-resets") ?? []).filter((r) => Date.parse(r.expiresAt) > now && r.userId !== user.id);
+  const pending = (readGlobal<ResetToken[]>("password-resets") ?? []).filter((r) => Date.parse(r.expiresAt) > now && r.userId !== user.id);
   pending.push({ tokenHash: sha256(token), userId: user.id, expiresAt: new Date(now + RESET_MS).toISOString() });
-  writeState("password-resets", pending);
+  writeGlobal("password-resets", pending);
   return { token, user };
 }
 
 /** Sets a new password from a reset token, and signs the account out everywhere. */
 export function resetPassword(token: unknown, password: unknown, now = Date.now()): User {
   const hash = sha256(String(token ?? ""));
-  const pending = readState<ResetToken[]>("password-resets") ?? [];
+  const pending = readGlobal<ResetToken[]>("password-resets") ?? [];
   const entry = pending.find((r) => r.tokenHash === hash && Date.parse(r.expiresAt) > now);
   if (!entry) throw new AuthError("This reset link has expired or was already used. Ask for a new one.", 400);
   const next = checkPassword(password);
@@ -259,9 +273,9 @@ export function resetPassword(token: unknown, password: unknown, now = Date.now(
   const user = all.find((u) => u.id === entry.userId);
   if (!user) throw new AuthError("This account no longer exists.", 404);
   user.passwordHash = hashPassword(next);
-  writeState("users", all);
-  writeState("password-resets", pending.filter((r) => r !== entry));
-  writeState("sessions", sessions().filter((s) => s.userId !== user.id));
+  writeGlobal("users", all);
+  writeGlobal("password-resets", pending.filter((r) => r !== entry));
+  writeGlobal("sessions", sessions().filter((s) => s.userId !== user.id));
   return user;
 }
 

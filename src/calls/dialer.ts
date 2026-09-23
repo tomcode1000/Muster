@@ -13,6 +13,7 @@ import { localMoment, withinHours } from "../domain/zoned";
 import { getCheckIn, saveCheckIn } from "../store";
 import type { Settings } from "../settings";
 import { recordDial, usageNow } from "../usage";
+import { currentWorkspaceId } from "../workspace-context";
 import { publicBase } from "../public-url";
 
 const FINAL = new Set(["completed", "busy", "no-answer", "failed", "canceled"]);
@@ -123,7 +124,7 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
     let end: CallEnd = { status: "failed", seconds: 0 };
     try {
       recordDial();
-      const url = `${base}/twilio/outbound?activity=${encodeURIComponent(activity.id)}&date=${project.planDate}`;
+      const url = `${base}/twilio/outbound?activity=${encodeURIComponent(activity.id)}&date=${project.planDate}&ws=${encodeURIComponent(currentWorkspaceId())}`;
       const call = await place(twilio, { to, from, url }, phone, log);
       end = await waitForEnd(twilio, call.sid);
       status = end.status;

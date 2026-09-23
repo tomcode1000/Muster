@@ -67,6 +67,7 @@ import {
 } from "./auth";
 import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
+import { migrateSingleWorkspace, safeWorkspaceId, withWorkspace } from "./workspace-context";
 import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -117,7 +118,8 @@ app.use((req, res, next) => {
       if (req.path.startsWith("/api/")) return res.status(403).json({ error: "Confirm your email to continue.", needsVerification: true });
       return res.redirect("/verify.html");
     }
-    return next();
+    // Everything this request touches belongs to this account's workspace.
+    return withWorkspace(user.workspaceId, () => next());
   }
   if (req.path.startsWith("/api/")) return res.status(401).json({ error: "Sign in to continue." });
   const target = hasAccounts() ? "signin.html" : "signup.html";
@@ -728,7 +730,10 @@ app.post("/api/rounds/stop", (_req, res) => {
 // Phone
 // ----------------------------------------------------------------------------
 
-app.post("/twilio/outbound", (req, res) => {
+app.post("/twilio/outbound", (req, res) =>
+  withWorkspace(safeWorkspaceId(req.query.ws), () => outboundTwiml(req, res)));
+
+function outboundTwiml(req: express.Request, res: express.Response) {
   const host = publicHost();
   const gaps = setupGaps(loadSettings());
   const booking = findBooking(req.query.activity, dateParam(req.query.date));
@@ -764,9 +769,9 @@ app.post("/twilio/outbound", (req, res) => {
 
   console.log(`[twilio] call answered for ${booking.contact.company}`);
   res.type("text/xml").send(
-    `<Response><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /></Stream></Connect></Response>`,
+    `<Response><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /><Parameter name="ws" value="${safeWorkspaceId(req.query.ws)}" /></Stream></Connect></Response>`,
   );
-});
+}
 
 app.post("/twilio/test", (_req, res) => {
   const { project, agent } = loadSettings();
@@ -776,6 +781,7 @@ app.post("/twilio/test", (_req, res) => {
 
 app.ws("/twilio/stream", (ws) => {
   let session: CheckInSession | null = null;
+  let workspace = "main";
   let streamSid = "";
   let markSeq = 0;
   const marks = new Map<string, () => void>();
@@ -809,20 +815,26 @@ app.ws("/twilio/stream", (ws) => {
     switch (msg.event) {
       case "start": {
         streamSid = msg.start.streamSid;
-        const booking = findBooking(msg.start.customParameters?.activity, dateParam(msg.start.customParameters?.date));
+        workspace = safeWorkspaceId(msg.start.customParameters?.ws);
+        const booking = withWorkspace(workspace, () =>
+          findBooking(msg.start.customParameters?.activity, dateParam(msg.start.customParameters?.date)));
         if (!booking) {
           console.error("[twilio] stream started for an unknown activity");
           ws.close();
           return;
         }
-        const u = usage();
+        const u = withWorkspace(workspace, () => usage());
         if (u.blocked) {
           console.error(`[twilio] call refused: ${u.blocked}`);
           ws.close();
           return;
         }
-        session = new CheckInSession(booking.project, booking.activity, booking.contact, transport, "audio/pcmu", "phone");
-        session.start(u.minutes.remainingSeconds);
+        // The session writes the check-in and the call record, so it runs in
+        // the workspace the call belongs to, not whichever was last seen.
+        withWorkspace(workspace, () => {
+          session = new CheckInSession(booking.project, booking.activity, booking.contact, transport, "audio/pcmu", "phone");
+          session.start(u.minutes.remainingSeconds);
+        });
         break;
       }
       case "media":
@@ -919,8 +931,13 @@ const port = Number(process.env.PORT || 3000);
  * host that wipes its filesystem comes back with the accounts and calls intact.
  */
 async function start() {
+  // An installation from before accounts had workspaces keeps its data.
+  const migrated = migrateSingleWorkspace();
+  if (migrated.moved.length) console.log(`Moved ${migrated.moved.length} items into the first workspace`);
+
   if (snapshotConfigured()) {
     const result = await restore();
+    if (result.restored) migrateSingleWorkspace();
     console.log(
       result.restored
         ? `Restored ${result.files} files from the saved copy`

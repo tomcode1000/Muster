@@ -8,8 +8,7 @@ import * as path from "path";
 import type { CheckIn, Project } from "./domain/types";
 import { emptyCheckIn } from "./agent/tools";
 import { scheduleSave } from "./snapshot";
-
-const DATA_DIR = process.env.MUSTER_DATA_DIR || path.join(process.cwd(), "data");
+import { globalDir, workspaceDir } from "./workspace-context";
 
 export interface CallRecord {
   callId: string;
@@ -84,7 +83,7 @@ function sleep(ms: number) {
 }
 
 function checkInFile(project: Project, activityId: string) {
-  return path.join(DATA_DIR, "checkins", project.id, project.planDate, `${activityId}.json`);
+  return path.join(workspaceDir(), "checkins", project.id, project.planDate, `${activityId}.json`);
 }
 
 export function getCheckIn(project: Project, activityId: string): CheckIn {
@@ -115,16 +114,29 @@ export function saveCheckIn(project: Project, checkIn: CheckIn) {
   }
 }
 
+/** Workspace state: the crew, the plan, what has been handled, what was used. */
 export function readState<T>(name: string): T | null {
-  return readJson<T>(path.join(DATA_DIR, `${name}.json`));
+  return readJson<T>(path.join(workspaceDir(), `${name}.json`));
 }
 
 export function writeState(name: string, value: unknown) {
-  writeJson(path.join(DATA_DIR, `${name}.json`), value);
+  writeJson(path.join(workspaceDir(), `${name}.json`), value);
+}
+
+/**
+ * Account state: who exists and who is signed in. It sits outside every
+ * workspace, because a session is what decides which workspace you are in.
+ */
+export function readGlobal<T>(name: string): T | null {
+  return readJson<T>(path.join(globalDir(), `${name}.json`));
+}
+
+export function writeGlobal(name: string, value: unknown) {
+  writeJson(path.join(globalDir(), `${name}.json`), value);
 }
 
 function readAllCalls(): CallRecord[] {
-  const dir = path.join(DATA_DIR, "calls");
+  const dir = path.join(workspaceDir(), "calls");
   let files: string[];
   try {
     files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
@@ -151,10 +163,10 @@ export function listCheckIns(project: Project): CheckIn[] {
 }
 
 export function saveCall(record: CallRecord) {
-  writeJson(path.join(DATA_DIR, "calls", `${record.callId}.json`), record);
+  writeJson(path.join(workspaceDir(), "calls", `${record.callId}.json`), record);
 }
 
 export function getCall(callId: string): CallRecord | null {
   if (!/^[a-z0-9_]+$/i.test(callId)) return null;
-  return readJson<CallRecord>(path.join(DATA_DIR, "calls", `${callId}.json`));
+  return readJson<CallRecord>(path.join(workspaceDir(), "calls", `${callId}.json`));
 }
