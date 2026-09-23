@@ -76,6 +76,24 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
     return c.status !== "complete" && c.status !== "unreachable" && c.attempts < schedule.maxAttempts;
   });
 
+  // "0 called" on its own reads like a failure. Say which of the three reasons it is.
+  if (due.length === 0) {
+    const counts = project.activities.reduce(
+      (acc, a) => {
+        const c = getCheckIn(project, a.id);
+        if (c.status === "complete") acc.done++;
+        else if (c.status === "unreachable" || c.attempts >= schedule.maxAttempts) acc.spent++;
+        return acc;
+      },
+      { done: 0, spent: 0 },
+    );
+    log(
+      project.activities.length === 0
+        ? `Nobody to call: nothing is booked for ${project.planDate}`
+        : `Nobody due: ${counts.done} already checked in, ${counts.spent} out of attempts, of ${project.activities.length} booked`,
+    );
+  }
+
   for (const activity of due) {
     if (opts.shouldStop?.()) {
       result.stoppedReason = "stopped";

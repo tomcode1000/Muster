@@ -94,6 +94,19 @@
 const M = window.Muster;
 const $ = (id) => document.getElementById(id);
 let day = null, ws = null, ctx = null, mic = null, node = null, playHead = 0, sources = [], callId = null, poll = null;
+/**
+ * On a phone the speaker is inches from the microphone, so Muster hears itself,
+ * transcribes its own words as the foreman, and stops mid sentence because it
+ * believes it was interrupted. The browser's echo cancellation cannot catch
+ * audio it did not play itself.
+ *
+ * So the page stops sending while Muster speaks, and starts again shortly after
+ * the last word. The cost is that you cannot talk over it, which a foreman on a
+ * phone line can still do, because a phone carries each direction separately.
+ */
+const LISTEN_AGAIN_AFTER_MS = 350;
+let speakingUntil = 0;
+const musterIsSpeaking = () => performance.now() < speakingUntil;
 
 M.mount("talk.html");
 document.querySelectorAll("[data-ic]").forEach((el) => (el.outerHTML = el.classList.contains("chev") ? M.icon(el.dataset.ic, 'class="chev"') : M.icon(el.dataset.ic)));
@@ -168,6 +181,7 @@ async function start() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}/browser/stream?activity=${encodeURIComponent($("booking").value)}&date=${day.project.planDate}`);
   node.port.onmessage = (e) => {
+    if (musterIsSpeaking()) return;
     if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "audio", audio: toBase64(e.data) }));
   };
   ws.onopen = () => { setStatus("Live. Muster will speak first.", "live"); setButton(true); };
@@ -217,6 +231,9 @@ function play(b64) {
   playHead = Math.max(playHead, ctx.currentTime);
   s.start(playHead);
   playHead += buf.duration;
+  // Everything queued, plus a moment for the room to go quiet.
+  speakingUntil = performance.now() + (playHead - ctx.currentTime) * 1000 + LISTEN_AGAIN_AFTER_MS;
+  setSpeaking(true);
   sources.push(s);
   s.onended = () => { sources = sources.filter((x) => x !== s); };
 }
@@ -225,6 +242,24 @@ function stopPlayback() {
   sources.forEach((s) => { try { s.stop(); } catch {} });
   sources = [];
   playHead = 0;
+  speakingUntil = 0;
+  setSpeaking(false);
+}
+
+/** Says who has the floor, so a pause does not read as the call having died. */
+let speakingTimer = null;
+function setSpeaking(on) {
+  const status = document.getElementById("statusText");
+  if (!status || !ws) return;
+  if (speakingTimer) clearTimeout(speakingTimer);
+  if (!on) {
+    status.textContent = "Listening. Speak as the foreman would.";
+    return;
+  }
+  status.textContent = "Muster is speaking.";
+  speakingTimer = setTimeout(() => {
+    if (ws) status.textContent = "Listening. Speak as the foreman would.";
+  }, Math.max(0, speakingUntil - performance.now()));
 }
 
 function afterPlayback(fn) {

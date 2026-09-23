@@ -729,11 +729,25 @@ app.post("/api/rounds/stop", (_req, res) => {
 // ----------------------------------------------------------------------------
 
 app.post("/twilio/outbound", (req, res) => {
-  const booking = findBooking(req.query.activity, dateParam(req.query.date));
   const host = publicHost();
-  if (!booking || !host) {
-    console.error(`[twilio] outbound TwiML refused: ${!host ? "MUSTER_PUBLIC_URL not set" : "unknown activity"}`);
-    res.type("text/xml").send(`<Response><Hangup/></Response>`);
+  const gaps = setupGaps(loadSettings());
+  const booking = findBooking(req.query.activity, dateParam(req.query.date));
+
+  /** Why this call cannot go ahead, in words a person on the phone can act on. */
+  const refusal = (): string | null => {
+    if (!host) return "This server does not know its own address yet, so it cannot carry the call.";
+    if (gaps.length) return `Setup is not finished. Add the ${gaps.join(" and ")} in Muster, then try again.`;
+    if (!booking) return "That booking could not be found. It may have been changed or removed since the call was placed.";
+    const blocked = usage().blocked;
+    return blocked ? `This call cannot run. ${blocked}` : null;
+  };
+
+  const why = refusal();
+  if (why || !booking) {
+    console.error(`[twilio] outbound refused: ${why}`);
+    res.type("text/xml").send(
+      `<Response><Say voice="Polly.Joanna">Sorry, this is Muster. ${xml(why ?? "This call cannot run.")}</Say><Hangup/></Response>`,
+    );
     return;
   }
   const answeredBy = String(req.body?.AnsweredBy ?? "");
