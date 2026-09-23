@@ -120,11 +120,13 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
     result.called++;
     const callsBefore = getCheckIn(project, activity.id).callIds.length;
     let status: string;
+    let end: CallEnd = { status: "failed", seconds: 0 };
     try {
       recordDial();
       const url = `${base}/twilio/outbound?activity=${encodeURIComponent(activity.id)}&date=${project.planDate}`;
       const call = await place(twilio, { to, from, url }, phone, log);
-      status = await waitForEnd(twilio, call.sid);
+      end = await waitForEnd(twilio, call.sid);
+      status = end.status;
     } catch (e: any) {
       log(`${contact.company}: call could not be placed, ${e.message}`);
       status = "failed";
@@ -132,6 +134,8 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
 
     const after = getCheckIn(project, activity.id);
     const talked = after.callIds.length > callsBefore;
+    const advice = diagnose(end, talked);
+    if (advice) log(`${contact.company}: ${advice}`);
     if (talked && after.status === "complete") {
       result.reached++;
       log(`${contact.company}: checked in`);
@@ -159,12 +163,40 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
   return result;
 }
 
-async function waitForEnd(twilio: ReturnType<typeof Twilio>, sid: string): Promise<string> {
+interface CallEnd {
+  status: string;
+  /** Seconds Twilio billed for, which is the time the line was actually open. */
+  seconds: number;
+}
+
+async function waitForEnd(twilio: ReturnType<typeof Twilio>, sid: string): Promise<CallEnd> {
   const deadline = Date.now() + 6 * 60_000;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 3000));
-    const { status } = await twilio.calls(sid).fetch();
-    if (FINAL.has(status)) return status;
+    const call = await twilio.calls(sid).fetch();
+    if (FINAL.has(call.status)) return { status: call.status, seconds: Number(call.duration ?? 0) };
   }
-  return "failed";
+  return { status: "failed", seconds: 0 };
+}
+
+/**
+ * Turns what Twilio reported into the next thing to try.
+ *
+ * A trial account announces itself before every call and asks for a keypress,
+ * which eats the first seconds, so a call that ends inside about fifteen
+ * seconds with nothing recorded never reached the conversation at all.
+ */
+function diagnose(end: CallEnd, talked: boolean): string | null {
+  if (end.status === "busy") return "The line was busy. Muster will retry on your schedule.";
+  if (end.status === "no-answer") return "Nobody picked up.";
+  if (end.status === "canceled") return "The call was cancelled before it connected.";
+  if (end.status === "failed") {
+    return "Twilio could not place the call. Check the number is verified on a trial account, and that calls to that country are allowed under Voice geographic permissions.";
+  }
+  if (end.status === "completed" && !talked) {
+    return end.seconds <= 15
+      ? `The call connected for ${end.seconds} seconds and no words were exchanged. On a trial account the recorded announcement plays first, so this usually means it was hung up during that, or the audio stream never opened.`
+      : `The call ran ${end.seconds} seconds but nothing was recorded, so the conversation did not reach the agent.`;
+  }
+  return null;
 }
