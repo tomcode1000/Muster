@@ -153,6 +153,10 @@ function save(state: ScheduleState) {
   writeState(STATE, state);
 }
 
+export function logRound(line: string) {
+  note(line);
+}
+
 function note(line: string) {
   console.log(`[round] ${line}`);
   const state = load();

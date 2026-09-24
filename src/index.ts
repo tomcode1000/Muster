@@ -24,7 +24,7 @@ import { currentProject, lastSnapshot, refreshFromSheet, startSheetMirror, tomor
 import { loadSettings, saveSettings, setupGaps, sheetIdFrom } from "./settings";
 import { serviceAccountEmail } from "./sheets/google";
 import { publicBase, publicHost } from "./public-url";
-import { scheduleState, startRound, startScheduler, stopRound } from "./calls/scheduler";
+import { logRound, scheduleState, startRound, startScheduler, stopRound } from "./calls/scheduler";
 import {
   addBooking,
   addContact,
@@ -750,6 +750,8 @@ function outboundTwiml(req: express.Request, res: express.Response) {
   const why = refusal();
   if (why || !booking) {
     console.error(`[twilio] outbound refused: ${why}`);
+    // Say it where the person will see it, not only in a log on the server.
+    logRound(`Call answered but stopped: ${why ?? "the booking could not be found"}`);
     res.type("text/xml").send(
       `<Response><Say voice="Polly.Joanna">Sorry, this is Muster. ${xml(why ?? "This call cannot run.")}</Say><Hangup/></Response>`,
     );
@@ -768,6 +770,7 @@ function outboundTwiml(req: express.Request, res: express.Response) {
   }
 
   console.log(`[twilio] call answered for ${booking.contact.company}`);
+  logRound(`${booking.contact.company}: answered, handing the call to the agent`);
   res.type("text/xml").send(
     `<Response><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /><Parameter name="ws" value="${safeWorkspaceId(req.query.ws)}" /></Stream></Connect></Response>`,
   );
@@ -820,12 +823,14 @@ app.ws("/twilio/stream", (ws) => {
           findBooking(msg.start.customParameters?.activity, dateParam(msg.start.customParameters?.date)));
         if (!booking) {
           console.error("[twilio] stream started for an unknown activity");
+          withWorkspace(workspace, () => logRound("A call connected but its booking could not be found, so no check-in ran"));
           ws.close();
           return;
         }
         const u = withWorkspace(workspace, () => usage());
         if (u.blocked) {
           console.error(`[twilio] call refused: ${u.blocked}`);
+          withWorkspace(workspace, () => logRound(`A call connected but was stopped: ${u.blocked}`));
           ws.close();
           return;
         }
