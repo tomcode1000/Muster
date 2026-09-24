@@ -774,8 +774,11 @@ function outboundTwiml(req: express.Request, res: express.Response) {
 
   console.log(`[twilio] call answered for ${booking.contact.company}`);
   logRound(`${booking.contact.company}: answered, handing the call to the agent`);
+
+  const settings = loadSettings();
+  const hello = `Hello, this is ${settings.agent.name || "Muster"} calling on behalf of ${settings.project.superintendent || "your superintendent"}. One moment.`;
   res.type("text/xml").send(
-    `<Response><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /><Parameter name="ws" value="${safeWorkspaceId(req.query.ws)}" /></Stream></Connect></Response>`,
+    `<Response><Say voice="Polly.Joanna">${xml(hello)}</Say><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /><Parameter name="ws" value="${safeWorkspaceId(req.query.ws)}" /></Stream></Connect></Response>`,
   );
 }
 
@@ -838,6 +841,7 @@ app.ws("/twilio/stream", (ws) => {
           ws.close();
           return;
         }
+        withWorkspace(workspace, () => logRound(`${booking.contact.company}: audio stream opened`));
         // The session writes the check-in and the call record, so it runs in
         // the workspace the call belongs to, not whichever was last seen.
         withWorkspace(workspace, () => {
