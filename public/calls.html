@@ -73,6 +73,7 @@ const ENDED = {
   agent_disconnected: ["notcoming", "Dropped"],
 };
 let calls = [];
+let drawn = "";
 let filter = "all";
 let query = "";
 
@@ -83,12 +84,17 @@ const duration = (a, b) => {
   return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
 };
 
-M.mount("calls.html", { onSearch: (q) => { query = q; if (!new URLSearchParams(location.search).get("id")) drawList(); } });
+M.mount("calls.html", { onSearch: (q) => { query = q; drawn = ""; if (!new URLSearchParams(location.search).get("id")) drawList(); } });
 
 // ---------------------------------------------------------------- List
 async function list() {
   try {
     calls = await M.api("GET", "/api/calls");
+    // A live call grows its duration every second, which is not a change worth
+    // rebuilding the page for, so the fingerprint ignores it.
+    const key = JSON.stringify([filter, query, calls.map((c) => [c.callId, c.endReason, c.endedAt, c.turns])]);
+    if (key === drawn) return;
+    drawn = key;
     drawList();
   } catch (ex) {
     view.innerHTML = `<div class="main"><div class="card empty">${M.esc(ex.message)}</div></div>`;
@@ -280,7 +286,7 @@ view.addEventListener("click", async (e) => {
     return pollRound();
   }
   const chip = e.target.closest("[data-f]");
-  if (chip) { filter = chip.dataset.f; drawList(); pollRound(); return; }
+  if (chip) { filter = chip.dataset.f; drawn = ""; drawList(); pollRound(); return; }
   const row = e.target.closest("tr.row");
   if (row) location.href = `calls.html?id=${encodeURIComponent(row.dataset.id)}`;
 });
