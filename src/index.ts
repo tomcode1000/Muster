@@ -68,6 +68,7 @@ import {
 import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
 import { migrateSingleWorkspace, safeWorkspaceId, withWorkspace } from "./workspace-context";
+import { markCall } from "./call-trace";
 import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -734,6 +735,8 @@ app.post("/twilio/outbound", (req, res) =>
   withWorkspace(safeWorkspaceId(req.query.ws), () => outboundTwiml(req, res)));
 
 function outboundTwiml(req: express.Request, res: express.Response) {
+  // Twilio asked what to do, which rules out the address, the region and the trial.
+  markCall(String(req.body?.CallSid ?? ""), "twiml");
   const host = publicHost();
   const gaps = setupGaps(loadSettings());
   const booking = findBooking(req.query.activity, dateParam(req.query.date));
@@ -818,6 +821,7 @@ app.ws("/twilio/stream", (ws) => {
     switch (msg.event) {
       case "start": {
         streamSid = msg.start.streamSid;
+        markCall(msg.start.callSid, "stream");
         workspace = safeWorkspaceId(msg.start.customParameters?.ws);
         const booking = withWorkspace(workspace, () =>
           findBooking(msg.start.customParameters?.activity, dateParam(msg.start.customParameters?.date)));

@@ -14,6 +14,7 @@ import { getCheckIn, saveCheckIn } from "../store";
 import type { Settings } from "../settings";
 import { recordDial, usageNow } from "../usage";
 import { currentWorkspaceId } from "../workspace-context";
+import { callReached } from "../call-trace";
 import { publicBase } from "../public-url";
 
 const FINAL = new Set(["completed", "busy", "no-answer", "failed", "canceled"]);
@@ -121,11 +122,13 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
     result.called++;
     const callsBefore = getCheckIn(project, activity.id).callIds.length;
     let status: string;
+    let sid = "";
     let end: CallEnd = { status: "failed", seconds: 0 };
     try {
       recordDial();
       const url = `${base}/twilio/outbound?activity=${encodeURIComponent(activity.id)}&date=${project.planDate}&ws=${encodeURIComponent(currentWorkspaceId())}`;
       const call = await place(twilio, { to, from, url }, phone, log);
+      sid = call.sid;
       end = await waitForEnd(twilio, call.sid);
       status = end.status;
     } catch (e: any) {
@@ -135,7 +138,7 @@ export async function runRound(opts: RoundOptions): Promise<RoundResult> {
 
     const after = getCheckIn(project, activity.id);
     const talked = after.callIds.length > callsBefore;
-    const advice = diagnose(end, talked);
+    const advice = diagnose(end, talked, sid);
     if (advice) log(`${contact.company}: ${advice}`);
     if (talked && after.status === "complete") {
       result.reached++;
@@ -187,7 +190,8 @@ async function waitForEnd(twilio: ReturnType<typeof Twilio>, sid: string): Promi
  * which eats the first seconds, so a call that ends inside about fifteen
  * seconds with nothing recorded never reached the conversation at all.
  */
-function diagnose(end: CallEnd, talked: boolean): string | null {
+function diagnose(end: CallEnd, talked: boolean, sid: string): string | null {
+  const reached = callReached(sid);
   if (end.status === "busy") return "The line was busy. Muster will retry on your schedule.";
   if (end.status === "no-answer") return "Nobody picked up.";
   if (end.status === "canceled") return "The call was cancelled before it connected.";
@@ -195,9 +199,13 @@ function diagnose(end: CallEnd, talked: boolean): string | null {
     return "Twilio could not place the call. Check the number is verified on a trial account, and that calls to that country are allowed under Voice geographic permissions.";
   }
   if (end.status === "completed" && !talked) {
-    return end.seconds <= 15
-      ? `The call connected for ${end.seconds} seconds and no words were exchanged. On a trial account the recorded announcement plays first, so this usually means it was hung up during that, or the audio stream never opened.`
-      : `The call ran ${end.seconds} seconds but nothing was recorded, so the conversation did not reach the agent.`;
+    if (!reached.twiml) {
+      return `The call was answered for ${end.seconds} seconds, but Twilio never asked Muster what to say. Check the voice webhook can reach this server, that calls to that country are allowed under Voice geographic permissions, and that a trial announcement was not hung up on.`;
+    }
+    if (!reached.stream) {
+      return `Muster gave Twilio its instructions, but the audio stream never opened, so nobody could hear anything. That is the websocket at ${process.env.MUSTER_PUBLIC_URL || "this server"} being refused or blocked.`;
+    }
+    return `The audio stream opened for ${end.seconds} seconds but no words were exchanged, so the agent never heard the foreman or never spoke.`;
   }
   return null;
 }
