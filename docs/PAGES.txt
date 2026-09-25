@@ -283,10 +283,10 @@ Tabs, each saved separately.
   - Onboarding, all four steps
   - Today, Plan with the booking drawer, Crew, Calls list and detail, Try a check-in, Settings
   - Usage limits per plan, shown on Today and Settings
+- **Built since:** the foreman check-in link, which needs no account and no phone line.
 - **Not built yet:**
   - Google sign in
   - Several projects per account
   - Audio recordings in call detail
-  - Foreman link page
   - Team
   - Morning summary email and SMS

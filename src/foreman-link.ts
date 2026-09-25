@@ -29,7 +29,12 @@ export interface ForemanLink {
   /** When the foreman first opened it, so the superintendent can see it landed. */
   openedAt: string | null;
   usedAt: string | null;
+  /** Check-ins run through this link, so a forwarded link cannot run up a bill. */
+  uses: number;
 }
+
+/** Enough for a foreman to try again after a bad line, and no more. */
+export const MAX_USES = 5;
 
 const all = (): ForemanLink[] => readState<ForemanLink[]>(FILE) ?? [];
 const save = (links: ForemanLink[]) => writeState(FILE, links);
@@ -52,6 +57,7 @@ export function createLink(activityId: string, date: string, hours = DEFAULT_HOU
     expiresAt: new Date(now + hours * 3_600_000).toISOString(),
     openedAt: null,
     usedAt: null,
+    uses: 0,
   };
   save([...kept, link]);
   return link;
@@ -65,13 +71,31 @@ export function findLink(token: unknown, now = Date.now()): ForemanLink | null {
   return link;
 }
 
-/** Records that the link was opened, or that a check-in ran through it. */
+/** Records that the link was opened. */
 export function markLink(token: string, field: "openedAt" | "usedAt", now = Date.now()) {
   const links = all();
   const link = links.find((l) => l.token === token);
   if (!link) return;
   link[field] = new Date(now).toISOString();
   save(links);
+}
+
+/**
+ * Claims one check-in against the link.
+ *
+ * Returns false once the allowance is spent. A link that reached the wrong
+ * person, or was forwarded around a site, then costs nothing further.
+ */
+export function useLink(token: string, now = Date.now()): boolean {
+  const links = all();
+  const link = links.find((l) => l.token === token);
+  if (!link) return false;
+  const used = link.uses ?? 0;
+  if (used >= MAX_USES) return false;
+  link.uses = used + 1;
+  link.usedAt = new Date(now).toISOString();
+  save(links);
+  return true;
 }
 
 export function revokeLink(activityId: string, date: string) {

@@ -211,12 +211,37 @@ const ARTICLES = [
     tip: "A typical check-in runs under two minutes, so 30 minutes is roughly 15 check-ins.",
   },
   {
+    id: "foreman-link", topic: "crew", title: "Send a foreman a link instead of calling", read: "2 min",
+    intro: "A link reaches a foreman who is abroad, on a bad line, or whose number you would rather not dial. They tap it, talk to the same agent a call would reach, and the answers land on the same plan.",
+    steps: [
+      "Open Plan and find the booking.",
+      "Press the three dots on the row, then Send a check-in link.",
+      "On a phone it opens WhatsApp with the message ready. On a laptop it copies the message for you to paste.",
+      "The foreman taps it, sees the job, and presses Start check-in.",
+      "Their answers appear on Today exactly as a call would leave them.",
+    ],
+    tip: "The link opens one booking and nothing else in your workspace. It expires in two days and allows five check-ins, so a link passed around a site cannot run up your call minutes.",
+  },
+  {
+    id: "phone-calls", topic: "phone", title: "Why a phone call may not connect", read: "2 min",
+    intro: "Muster dials through Twilio and hands the live audio to the agent. That last step needs an account that is not a trial.",
+    steps: [
+      "A trial account fetches Muster's instructions and plays the opening line.",
+      "It then ignores the request to open the audio stream, and raises no error, so the call simply ends.",
+      "Upgrading the Twilio account removes that restriction, along with the recorded announcement and the verified number limit.",
+      "Nothing in Muster changes when you upgrade: the dialling, scheduling, retries and voicemail are already built.",
+      "Until then, send a check-in link, which needs no phone company at all.",
+    ],
+    tip: "The round log on the Calls page names exactly what happened to each call, including whether the audio stream ever opened.",
+  },
+  {
     id: "not-yet", topic: "limits", title: "What Muster does not do yet", read: "1 min",
     intro: "Worth knowing before you plan around it.",
     steps: [
       "One project per workspace. Several projects are not built yet.",
       "Everyone who signs in shares the same workspace. There are no separate roles yet.",
       "Calls are not recorded as audio. You get the full transcript and every recorded fact instead.",
+      "Phone calls need a paid account with the phone provider. The check-in link works on any plan.",
       "Google sign in is not connected. Use your email and a password.",
       "There is no morning email or SMS yet. Open Today instead.",
     ],

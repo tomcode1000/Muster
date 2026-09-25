@@ -70,7 +70,7 @@ import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
 import { migrateSingleWorkspace, safeWorkspaceId, withWorkspace } from "./workspace-context";
 import { markCall, markSocketOpened } from "./call-trace";
-import { createLink, findLink, linkFor, markLink, revokeLink } from "./foreman-link";
+import { createLink, findLink, linkFor, markLink, revokeLink, useLink } from "./foreman-link";
 import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -988,7 +988,10 @@ app.ws("/browser/stream", (ws, req) => {
     ws.close(4004, "unknown activity");
     return;
   }
-  if (link) markLink(link.token, "usedAt");
+  if (link && !withWorkspace(link.workspaceId, () => useLink(link.token))) {
+    ws.close(4029, "this link has been used enough times");
+    return;
+  }
 
   let drainSeq = 0;
   const drains = new Map<number, () => void>();

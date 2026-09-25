@@ -7,7 +7,7 @@ Built on the AssemblyAI Voice Agent API, with Twilio for phone calls.
 ## How it works
 
 1. **Plan.** Tomorrow's bookings, entered in Muster or read from a Google Sheet.
-2. **Call.** At your call time, Muster rings each foreman. A browser check-in runs the same conversation without a phone line.
+2. **Reach the foreman.** Two ways, the same conversation either way: Muster rings them at your call time, or you send a link they tap on their phone. The link needs no account and no phone line.
 3. **Record.** The agent writes what the foreman said into a check-in record through validated tools. Nothing is recorded that was not said.
 4. **Rank.** Plain code, not the model, compares the record with the plan: short crews, late arrivals, unconfirmed prerequisites, deliveries after start, blockers and area clashes.
 
@@ -81,6 +81,7 @@ The free plan is right for a demonstration and wrong for real use, because of th
 | `crew.html` | Subcontractors, foremen and their latest check-in |
 | `calls.html` | Every call, with transcript and recorded facts |
 | `talk.html` | A check-in from the browser |
+| `foreman.html` | The link a foreman taps: no account, one booking, speak to the agent |
 | `settings.html` | Project, data source, agent, schedule, rounds, usage |
 
 ## Accounts and workspaces
@@ -111,10 +112,19 @@ Limits are enforced on the server and set by `MUSTER_PLAN` in `.env`.
 | Calls per day | 20 | 100 | 400 |
 | Subcontractors | 5 | 50 | No limit |
 
+## Reaching foremen
+
+A check-in can arrive two ways.
+
+**A phone call.** Muster dials through Twilio and bridges the audio to the agent. This needs a Twilio account that can open Media Streams. A **trial account cannot**: it fetches the instructions, plays the opening line, and then silently ignores `<Connect><Stream>`, raising no error. We confirmed that across two independent networks and against a public echo server. Upgrading the Twilio account is the only fix, and no code changes with it.
+
+**A link.** From a booking row, **Send a check-in link** produces a message ready for WhatsApp in the foreman's own language. They tap it, talk to the same agent, and the answers land on the same plan. Holding the link is the permission: it names one booking, expires in two days, allows five check-ins, and reads only the call it started. It reaches nothing else in the workspace.
+
 ## Known limits
 
 - **Each account owns a workspace.** Crew, plan, calls, settings and usage are separate, and nobody can see another account's data. The first account created keeps the original workspace, so an installation from before this existed is not stranded.
 - **Google sign in is not connected.** Use email and password.
+- **Phone calls need a Twilio account that is not a trial.** The dialer, the scheduler, retries and voicemail are built; a trial silently refuses the audio stream. The link path works on any account.
 - **One project per workspace.**
 - **Data is stored as JSON files** in `data/`. On a host with no disk, set the Upstash keys and the directory is mirrored and restored automatically.
 
