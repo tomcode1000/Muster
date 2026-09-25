@@ -21,6 +21,26 @@ export const LATE_TOLERANCE_MIN = 15;
 
 const SEVERITY_RANK: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
+/**
+ * How a blocker reads on the morning board.
+ *
+ * "reports a other blocker" is the sort of seam that makes a screen look
+ * generated. Each category gets the words a superintendent would use, and
+ * "other" says plainly that something is in the way without naming a kind.
+ */
+function blockerPhrase(category: string): string {
+  switch (category) {
+    case "material": return "a materials problem";
+    case "access": return "an access problem";
+    case "weather": return "a weather problem";
+    case "inspection": return "an inspection problem";
+    case "equipment": return "an equipment problem";
+    case "safety": return "a safety problem";
+    case "labor": return "a labour problem";
+    default: return "something in the way";
+  }
+}
+
 export function evaluateDay(project: Project, checkIns: CheckIn[]): Finding[] {
   const byActivity = new Map(checkIns.map((c) => [c.activityId, c]));
   const findings: Finding[] = [];
@@ -144,7 +164,7 @@ export function evaluateActivity(
       code: "BLOCKER",
       severity: blocker.category === "safety" ? "critical" : "high",
       activityIds: [activity.id],
-      title: `${who} reports a ${blocker.category} blocker`,
+      title: `${who} reports ${blockerPhrase(blocker.category)}`,
       detail: blocker.description,
       evidence: [blocker.evidence],
     });

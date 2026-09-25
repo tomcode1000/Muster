@@ -142,6 +142,9 @@ export interface ToolOutcome {
 }
 
 /** Applies one tool call to a check-in, returning a new record. */
+/** Phrases that mean "no blocker", which must never become a finding. */
+const NOTHING = /^\s*(none|no|nothing|nil|n\/a|not applicable|no blockers?|none reported|nothing reported|nothing else|no issues?)[\s.!]*$/i;
+
 export function applyTool(
   activity: Activity,
   checkIn: CheckIn,
@@ -200,6 +203,13 @@ export function applyTool(
       if (!BLOCKER_CATEGORIES.includes(category)) return fail(`category must be one of ${BLOCKER_CATEGORIES.join(", ")}`);
       const description = text(args.description);
       if (!description) return fail("description is required");
+      // "No, nothing else" is an answer, not a blocker. Recording absence as a
+      // problem puts a finding on the morning board with a quote that reads as
+      // though the foreman raised something, which is the opposite of what he
+      // said. The agent is told to call this only when there is something real.
+      if (NOTHING.test(description)) {
+        return fail("Only report a blocker when the foreman names something real. Do not record that there is nothing.");
+      }
       next.blockers.push({ category, description, evidence });
       return ok();
     }
