@@ -54,6 +54,7 @@ import {
   endSession,
   hasAccounts,
   isConfirmed,
+  isOn,
   markOnboarded,
   readCookie,
   resetPassword,
@@ -69,6 +70,7 @@ import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
 import { migrateSingleWorkspace, safeWorkspaceId, withWorkspace } from "./workspace-context";
 import { markCall, markSocketOpened } from "./call-trace";
+import { createLink, findLink, linkFor, markLink, revokeLink } from "./foreman-link";
 import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -101,8 +103,8 @@ const APP_PAGES = new Set([
   "/help.html",
 ]);
 // Confirming happens from a link in an email, often on a phone that is not signed in.
-/** Reached by Twilio or by the auth screens themselves, never with a user cookie. */
-const PUBLIC_PATHS = [/^\/health$/, /^\/api\/auth\//, /^\/twilio\//];
+/** Reached by Twilio, by the auth screens, or by a foreman holding a link. */
+const PUBLIC_PATHS = [/^\/health$/, /^\/api\/auth\//, /^\/twilio\//, /^\/api\/foreman\//];
 
 const sessionUser = (req: express.Request): User | null => userForToken(readCookie(req.headers.cookie, SESSION_COOKIE));
 
@@ -704,6 +706,85 @@ app.post("/api/phone/test", async (req, res) => {
   }
 });
 
+/**
+ * A link for one booking, for the superintendent to send on.
+ *
+ * Sending it again returns the same link until it expires, so a foreman who
+ * was sent it twice does not end up with one that stopped working.
+ */
+app.post("/api/bookings/:id/link", (req, res) =>
+  handle(res, () => {
+    const date = dateParam(req.body?.date) ?? tomorrow(loadSettings().project.timezone);
+    const project = currentProject(date);
+    const activity = project.activities.find((a) => a.id === String(req.params.id));
+    if (!activity) throw new ValidationError(["That booking is not on the plan for this day"]);
+    const contact = project.contacts.find((c) => c.id === activity.contactId);
+
+    const link = linkFor(activity.id, date) ?? createLink(activity.id, date);
+    const base = publicBase() || `${req.protocol}://${req.get("host")}`;
+    return {
+      url: `${base}/foreman.html?t=${link.token}`,
+      expiresAt: link.expiresAt,
+      openedAt: link.openedAt,
+      usedAt: link.usedAt,
+      // Ready to paste into WhatsApp, in the foreman's own language.
+      message:
+        contact?.language === "es"
+          ? `Hola ${contact.foreman}, soy ${loadSettings().project.superintendent} de ${project.name}. Toque para confirmar el trabajo de mañana, toma un minuto: `
+          : `Hi ${contact?.foreman ?? "there"}, ${loadSettings().project.superintendent} here from ${project.name}. Tap to confirm tomorrow's work, it takes a minute: `,
+    };
+  }),
+);
+
+app.delete("/api/bookings/:id/link", (req, res) =>
+  handle(res, () => {
+    const date = dateParam(req.query.date) ?? tomorrow(loadSettings().project.timezone);
+    revokeLink(String(req.params.id), date);
+    return { ok: true };
+  }),
+);
+
+// ---------------------------------------------------------------- foreman side
+/** What the page shows before the foreman taps: who is calling, and about what. */
+app.get("/api/foreman/:token", (req, res) => {
+  const link = findLink(req.params.token);
+  if (!link) return res.status(404).json({ error: "This link has expired. Ask your superintendent to send a new one." });
+
+  withWorkspace(link.workspaceId, () => {
+    const booking = findBooking(link.activityId, link.date);
+    if (!booking) return res.status(404).json({ error: "This booking is no longer on the plan." });
+    markLink(link.token, "openedAt");
+
+    const settings = loadSettings();
+    res.json({
+      project: booking.project.name,
+      superintendent: settings.project.superintendent,
+      date: booking.project.planDate,
+      foreman: booking.contact.foreman,
+      company: booking.contact.company,
+      language: booking.contact.language,
+      work: booking.activity.description,
+      area: booking.activity.area,
+      start: booking.activity.start,
+      crewNeeded: booking.activity.crewNeeded,
+      done: Boolean(link.usedAt),
+    });
+  });
+});
+
+/** The transcript of the call this link started, so the foreman sees their own words. */
+app.get("/api/foreman/:token/call/:callId", (req, res) => {
+  const link = findLink(req.params.token);
+  if (!link) return res.status(404).json({ error: "This link has expired." });
+
+  withWorkspace(link.workspaceId, () => {
+    const call = getCall(String(req.params.callId));
+    // A link may only read the call it started, never another booking's.
+    if (!call || call.activityId !== link.activityId) return res.status(404).json({ error: "No such check-in." });
+    res.json({ turns: call.turns, endedAt: call.endedAt });
+  });
+});
+
 app.get("/api/rounds", (_req, res) => res.json(scheduleState()));
 
 app.post("/api/rounds/run", (req, res) => {
@@ -781,6 +862,20 @@ function outboundTwiml(req: express.Request, res: express.Response) {
     `<Response><Say voice="Polly.Joanna">${xml(hello)}</Say><Connect><Stream url="wss://${host}/twilio/stream"><Parameter name="activity" value="${booking.activity.id}" /><Parameter name="date" value="${booking.project.planDate}" /><Parameter name="ws" value="${safeWorkspaceId(req.query.ws)}" /></Stream></Connect></Response>`,
   );
 }
+
+/**
+ * A connection test, off unless MUSTER_STREAM_TEST is on.
+ *
+ * Answers with a media stream pointed at a public echo service instead of this
+ * server. If the call still ends at once, the account cannot open streams to
+ * anywhere, which separates a Twilio restriction from a problem at our end.
+ */
+app.post("/twilio/stream-test", (_req, res) => {
+  if (!isOn(process.env.MUSTER_STREAM_TEST)) return res.type("text/xml").send("<Response><Hangup/></Response>");
+  res.type("text/xml").send(
+    `<Response><Say voice="Polly.Joanna">Connection test. Stay on the line.</Say><Connect><Stream url="wss://echo.websocket.events" /></Connect></Response>`,
+  );
+});
 
 app.post("/twilio/test", (_req, res) => {
   const { project, agent } = loadSettings();
@@ -878,15 +973,22 @@ app.ws("/twilio/stream", (ws) => {
 // ----------------------------------------------------------------------------
 
 app.ws("/browser/stream", (ws, req) => {
-  if (!sessionUser(req)) {
+  // Two ways in: a signed in superintendent trying a check-in, or a foreman
+  // holding a link. The conversation that follows is the same either way.
+  const link = req.query.t ? findLink(req.query.t) : null;
+  if (!link && !sessionUser(req)) {
     ws.close(4401, "sign in required");
     return;
   }
-  const booking = findBooking(req.query.activity, dateParam(req.query.date));
+
+  const workspace = link ? link.workspaceId : (sessionUser(req) as User).workspaceId;
+  const booking = withWorkspace(workspace, () =>
+    link ? findBooking(link.activityId, link.date) : findBooking(req.query.activity, dateParam(req.query.date)));
   if (!booking) {
     ws.close(4004, "unknown activity");
     return;
   }
+  if (link) markLink(link.token, "usedAt");
 
   let drainSeq = 0;
   const drains = new Map<number, () => void>();
@@ -910,15 +1012,20 @@ app.ws("/browser/stream", (ws, req) => {
     },
   };
 
-  const u = usage();
+  const u = withWorkspace(workspace, () => usage());
   if (u.blocked) {
     send({ type: "limit", message: u.blocked });
     ws.close(4029, "usage limit");
     return;
   }
-  const session = new CheckInSession(booking.project, booking.activity, booking.contact, transport, "audio/pcm", "browser");
+  // The check-in and the call record belong to the workspace that owns the
+  // booking, which for a foreman's link is not the last one seen.
+  const session = withWorkspace(workspace, () => {
+    const started = new CheckInSession(booking.project, booking.activity, booking.contact, transport, "audio/pcm", "browser");
+    started.start(u.minutes.remainingSeconds);
+    return started;
+  });
   send({ type: "call", callId: session.callId });
-  session.start(u.minutes.remainingSeconds);
 
   ws.on("message", (data) => {
     let msg: any;

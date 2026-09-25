@@ -208,6 +208,7 @@ function draw() {
               ${lastCall ? `<a href="calls.html?id=${M.esc(lastCall)}">Open call log</a>` : ""}
               ${finding ? `<button data-act="handled" data-key="${M.esc(findingKey(finding))}">Mark handled</button>` : ""}
               ${isSheet() ? "" : `<button data-act="duplicate">Copy to next day</button>`}
+              <button data-act="link">Send a check-in link</button>
               <a href="talk.html?date=${state.date}">Try this check-in</a>
             </div>
           </div>
@@ -444,6 +445,18 @@ document.addEventListener("click", async (e) => {
       await M.api("DELETE", `/api/bookings/${id}`);
       M.toast("Booking deleted.");
       return load(state.date);
+    }
+    if (act === "link") {
+      const r = await M.api("POST", `/api/bookings/${id}/link`, { date: state.date });
+      const text = `${r.message}${r.url}`;
+      try {
+        // Share opens WhatsApp and the rest directly on a phone.
+        if (navigator.share) await navigator.share({ text });
+        else { await navigator.clipboard.writeText(text); M.toast("Link copied. Paste it to the foreman."); }
+      } catch {
+        await navigator.clipboard.writeText(text).then(() => M.toast("Link copied.")).catch(() => M.toast(r.url));
+      }
+      return;
     }
     if (act === "handled") {
       const r = await M.api("POST", "/api/findings/handled", { date: state.date, key: btn.dataset.key });
