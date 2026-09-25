@@ -272,8 +272,23 @@ if (!process.env.ASSEMBLYAI_API_KEY) {
   process.exit(1);
 }
 
+/**
+ * Also reports how long this process has been up and how much memory it holds.
+ *
+ * A check-in that cuts off mid-sentence and saves nothing looks identical to a
+ * network fault from the outside. The two are told apart by whether the server
+ * restarted underneath it: an uptime shorter than the call is the answer. On a
+ * 512 MB host the heap figure says whether a restart was memory running out.
+ */
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  const mem = process.memoryUsage();
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    memory: { rssMb: Math.round(mem.rss / 1048576), heapMb: Math.round(mem.heapUsed / 1048576) },
+  });
 });
 
 function findBooking(activityId: unknown, date?: string) {
