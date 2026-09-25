@@ -64,6 +64,14 @@ export interface Attendance {
   crewSize: number | null;
   arrival: string | null;
   evidence: Evidence;
+  /**
+   * Crew size and arrival usually arrive in different sentences, and a later
+   * correction rewrites only one of them. Keeping a quote per fact stops a
+   * short crew being evidenced by the sentence about what time they turn up.
+   * Absent on check-ins recorded before this was tracked.
+   */
+  crewEvidence?: Evidence;
+  arrivalEvidence?: Evidence;
 }
 
 export type BlockerCategory =

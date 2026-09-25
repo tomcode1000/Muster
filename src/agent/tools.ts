@@ -185,12 +185,18 @@ export function applyTool(
         if (!arrival) return fail("arrival_time must be a time like 07:00; ask the foreman again");
       }
       const previous = next.attendance;
+      const keptCrew = args.coming ? (previous?.crewSize ?? null) : null;
+      const keptArrival = args.coming ? (previous?.arrival ?? null) : null;
       next.attendance = {
         coming: args.coming,
         // A correction that only restates one field keeps the other.
-        crewSize: crewSize ?? (args.coming ? previous?.crewSize ?? null : null),
-        arrival: arrival ?? (args.coming ? previous?.arrival ?? null : null),
+        crewSize: crewSize ?? keptCrew,
+        arrival: arrival ?? keptArrival,
         evidence,
+        // The quote follows the fact: only the field this call actually set
+        // takes the sentence that was just spoken.
+        crewEvidence: crewSize !== null ? evidence : previous?.crewEvidence,
+        arrivalEvidence: arrival !== null ? evidence : previous?.arrivalEvidence,
       };
       const missing = args.coming
         ? [next.attendance.crewSize === null && "crew size", next.attendance.arrival === null && "arrival time"].filter(Boolean)

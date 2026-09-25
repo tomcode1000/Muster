@@ -111,7 +111,7 @@ export function evaluateActivity(
         activityIds: [activity.id],
         title: `${who} is bringing ${att.crewSize} of ${activity.crewNeeded}`,
         detail: `${activity.description} is planned for a crew of ${activity.crewNeeded}.`,
-        evidence: [att.evidence],
+        evidence: [att.crewEvidence ?? att.evidence],
       });
     }
     if (att.arrival !== null) {
@@ -123,7 +123,7 @@ export function evaluateActivity(
           activityIds: [activity.id],
           title: `${who} arrives ${late} minutes late`,
           detail: `Planned start ${formatClock(activity.start)}, arriving ${formatClock(att.arrival)}.`,
-          evidence: [att.evidence],
+          evidence: [att.arrivalEvidence ?? att.evidence],
         });
       }
     }
