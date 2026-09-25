@@ -68,7 +68,7 @@ import {
 import { linkMessage, mailConfigured, sendMail } from "./mail";
 import { flush, restore, snapshotConfigured } from "./snapshot";
 import { migrateSingleWorkspace, safeWorkspaceId, withWorkspace } from "./workspace-context";
-import { markCall } from "./call-trace";
+import { markCall, markSocketOpened } from "./call-trace";
 import { startKeepAwake } from "./keep-awake";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -789,6 +789,9 @@ app.post("/twilio/test", (_req, res) => {
 });
 
 app.ws("/twilio/stream", (ws) => {
+  // Before any frame is read: Twilio reached this server and the handshake held.
+  markSocketOpened();
+  console.log("[twilio] media socket opened");
   let session: CheckInSession | null = null;
   let workspace = "main";
   let streamSid = "";

@@ -25,6 +25,23 @@ interface Trace {
 const traces = new Map<string, Trace>();
 const KEEP_MS = 30 * 60_000;
 
+/**
+ * When a media socket last reached this server at all, named or not.
+ *
+ * Twilio identifies a call in its first frame, so a socket that opens and says
+ * nothing leaves no trace against a call id. Knowing one arrived still
+ * separates "Twilio never got here" from "Twilio got here and gave up".
+ */
+let lastSocket = 0;
+
+export function markSocketOpened() {
+  lastSocket = Date.now();
+}
+
+export function socketOpenedSince(at: number): boolean {
+  return lastSocket >= at;
+}
+
 export function markCall(sid: string | undefined, stage: Stage) {
   if (!sid) return;
   const trace = traces.get(sid) ?? {};
