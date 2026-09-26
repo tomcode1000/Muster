@@ -15,3 +15,8 @@ public/images/WhatsApp*.jpeg
 
 # Recording notes, mine, not the project
 SCRIPT.txt
+
+# Local demo copy used for recording: holds a session token and a password hash.
+data-demo/
+.demo-cookies.txt
+demo-ids.json
