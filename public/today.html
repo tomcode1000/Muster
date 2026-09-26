@@ -249,13 +249,19 @@ function render() {
       : `Nothing is booked for tomorrow yet. Add bookings on the <a href="plan.html" style="color:#2f5bea;font-weight:600">Plan</a> page.`;
 
   // Needs attention: one row per booking, led by its most severe open finding.
+  // A finding that spans two bookings, such as two trades booked into the same
+  // area at the same hour, belongs to neither of them on its own. Folding it
+  // under the first booking hides the one problem nobody said out loud, so it
+  // gets a row of its own.
   const rank = { critical: 0, high: 1, medium: 2, low: 3 };
+  const shared = open.filter((f) => f.activityIds.length > 1);
   const lead = new Map();
   for (const f of open) {
+    if (f.activityIds.length > 1) continue;
     const id = f.activityIds[0];
     if (!lead.has(id) || rank[f.severity] < rank[lead.get(id).severity]) lead.set(id, f);
   }
-  const items = [...lead.values()].sort((a, b) => rank[a.severity] - rank[b.severity]);
+  const items = [...shared, ...lead.values()].sort((a, b) => rank[a.severity] - rank[b.severity]);
   $("attnCount").textContent = `${items.length} ${items.length === 1 ? "item" : "items"}`;
   const q = query;
   const matches = (...parts) => !q || parts.join(" ").toLowerCase().includes(q);
@@ -273,7 +279,9 @@ function render() {
       const a = project.activities.find((x) => x.id === f.activityIds[0]);
       const c = contact(a.contactId);
       const ci = byActivity[a.id];
-      const what = f.title.startsWith(c.company) ? f.title.slice(c.company.length).trim().replace(/^is\s/, "") : f.title;
+      // A shared finding names both sides in its title, so it is shown whole.
+      const across = f.activityIds.length > 1;
+      const what = !across && f.title.startsWith(c.company) ? f.title.slice(c.company.length).trim().replace(/^is\s/, "") : f.title;
       const whatCap = what.charAt(0).toUpperCase() + what.slice(1);
       const quote = f.evidence[0]?.quote;
       const lastCall = ci?.callIds?.at(-1);
@@ -282,7 +290,7 @@ function render() {
       const icon = primary[2] === "check" ? '<path d="M5 12l5 5L20 7"/>' : '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>';
       return `<div class="item" data-activity="${esc(a.id)}" data-key="${esc(findingKey(f))}" data-call="${esc(lastCall || "")}">
         <span class="av">${esc(initials(c.company))}</span>
-        <span><b>${esc(c.company)}</b><span class="what">${esc(whatCap)}</span>
+        <span><b>${esc(across ? "Two trades, one area" : c.company)}</b><span class="what">${esc(whatCap)}</span>
           ${quote ? `<q>${esc(quote)}</q>` : `<span class="meta">${esc(f.detail)}</span>`}
           <span class="meta"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${ci ? `${ci.attempts} ${ci.attempts === 1 ? "call" : "calls"}` : "Not called"} &#183; ${esc(a.area)}</span></span>
         <span class="sev ${f.severity}">${f.severity[0].toUpperCase() + f.severity.slice(1)}</span>
@@ -363,10 +371,8 @@ async function load() {
 
 document.addEventListener("click", async (e) => {
   const kebab = e.target.closest(".kebab");
-  document.querySelectorAll(".kebab .menu").forEach((m) => { if (!m.parentElement.contains(e.target)) m.hidden = true; });
   if (kebab && !e.target.closest("[data-do]")) {
-    const m = kebab.querySelector(".menu");
-    m.hidden = !m.hidden;
+    M.toggleMenu(kebab.querySelector(".menu"));
     return;
   }
 
@@ -401,8 +407,7 @@ document.addEventListener("keydown", (e) => {
   const k = e.target.closest && e.target.closest(".kebab");
   if (k && e.target === k && (e.key === "Enter" || e.key === " ")) {
     e.preventDefault();
-    const m = k.querySelector(".menu");
-    m.hidden = !m.hidden;
+    M.toggleMenu(k.querySelector(".menu"));
   }
 });
 

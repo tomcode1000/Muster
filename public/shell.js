@@ -384,12 +384,61 @@
     if (dot) dot.hidden = !on;
   }
 
+  /**
+   * Lifts an open row menu out of whatever is clipping it.
+   *
+   * Rows live inside a table wrapper that scrolls sideways on narrow screens,
+   * and `overflow-x: auto` quietly makes the vertical axis clip too. A menu on
+   * a lower row was therefore cut off at the card edge, which hid the last
+   * entries and made them impossible to click. Fixed positioning takes the menu
+   * out of that box, and the position is worked out from the button each time
+   * so it still sits under the one that was pressed. The menu flips above the
+   * button when there is no room beneath it.
+   */
+  function placeMenu(menu) {
+    const anchor = menu.parentElement;
+    if (!anchor) return;
+    const r = anchor.getBoundingClientRect();
+    menu.style.position = "fixed";
+    menu.style.top = menu.style.left = menu.style.right = "auto";
+    menu.style.visibility = "hidden";
+    const h = menu.offsetHeight, w = menu.offsetWidth;
+    const below = window.innerHeight - r.bottom;
+    menu.style.top = `${below < h + 12 && r.top > h + 12 ? r.top - h - 6 : r.bottom + 6}px`;
+    menu.style.left = `${Math.max(10, Math.min(r.right - w, window.innerWidth - w - 10))}px`;
+    menu.style.visibility = "";
+  }
+
+  function closeMenus(except) {
+    document.querySelectorAll(".menu").forEach((m) => {
+      if (m === except || !m.parentElement || !m.parentElement.matches("[data-menu], .kebab")) return;
+      m.hidden = true;
+      m.style.position = m.style.top = m.style.left = "";
+    });
+  }
+
+  /** Opens a row menu, or closes it if it was already open. Returns the state. */
+  function toggleMenu(menu) {
+    const opening = menu.hidden;
+    closeMenus(menu);
+    menu.hidden = !opening;
+    if (opening) placeMenu(menu);
+    else menu.style.position = menu.style.top = menu.style.left = "";
+    return opening;
+  }
+
   /** Closes any open row menu when clicking elsewhere. */
   document.addEventListener("click", (e) => {
-    document.querySelectorAll("[data-menu] > .menu").forEach((m) => {
-      if (!m.parentElement.contains(e.target)) m.hidden = true;
+    document.querySelectorAll("[data-menu] > .menu, .kebab > .menu").forEach((m) => {
+      if (!m.parentElement.contains(e.target) && !m.contains(e.target)) {
+        m.hidden = true;
+        m.style.position = m.style.top = m.style.left = "";
+      }
     });
   });
+  // A menu placed in viewport coordinates has to follow the page, or be dismissed.
+  window.addEventListener("scroll", () => closeMenus(), true);
+  window.addEventListener("resize", () => closeMenus());
 
-  window.Muster = { icon, esc, clock, initials, fmtDay, shortDay, addDays, hours, timeOf, api, toast, statusOf, pill, mount, setAttentionDot };
+  window.Muster = { icon, esc, clock, initials, fmtDay, shortDay, addDays, hours, timeOf, api, toast, statusOf, pill, mount, setAttentionDot, toggleMenu, closeMenus };
 })();

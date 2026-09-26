@@ -438,7 +438,7 @@ document.addEventListener("click", async (e) => {
   if (!btn) return;
   const act = btn.dataset.act;
   try {
-    if (act === "menu") { const m = btn.nextElementSibling; m.hidden = !m.hidden; return; }
+    if (act === "menu") { M.toggleMenu(btn.nextElementSibling); return; }
     if (act === "edit") return openDrawer(activity);
     if (act === "delete") {
       if (!confirm("Delete this booking?")) return;
