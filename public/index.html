@@ -585,6 +585,21 @@
   .custom a { color: var(--blue); font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
   .custom a svg { width: 13px; height: 13px; }
 
+  /* ---------- Where it stands ---------- */
+  .stands { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 56px; align-items: start;
+    padding: 34px 38px; border: 1px solid var(--line); border-radius: 20px; background: #fff;
+    box-shadow: 0 14px 40px rgba(20, 28, 70, .05); }
+  .stands h3 { margin: 12px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--navy); }
+  .stands .when { margin-top: 8px; font-size: 12.5px; color: #8a90a2; }
+  .stands ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 18px; }
+  .stands li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 14px; font-size: 14px; line-height: 1.65; color: #4a5268; }
+  .stands li b { color: var(--navy); font-weight: 700; }
+  .stands .mk { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; margin-top: 2px; }
+  .stands .mk svg { width: 13px; height: 13px; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .stands .yes .mk { background: #e4f5ec; color: #1f9463; }
+  .stands .wait .mk { background: #fdf0da; color: #b4720f; }
+  @media (max-width: 900px) { .stands { grid-template-columns: 1fr; gap: 26px; padding: 26px 22px; } }
+
   /* ---------- FAQ ---------- */
   .faq { display: grid; grid-template-columns: minmax(0, 470px) minmax(0, 1fr); gap: 76px; align-items: start; }
   .qpoints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px; }
@@ -1294,6 +1309,26 @@
         </div>
         <p class="custom">Need more call minutes or a custom plan? <a href="mailto:hello@muster.app">Get in touch with our team <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></p>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================== Where it stands ============================== -->
+  <!-- Said plainly on the page rather than left for someone to discover. -->
+  <section class="section" id="stands">
+    <div class="stands reveal">
+      <div>
+        <span class="pill"><i></i>Where it stands</span>
+        <h3>What is running, and what is waiting.</h3>
+        <p class="when">September 2026</p>
+      </div>
+      <ul>
+        <li class="yes"><span class="mk"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg></span>
+          <span><b>The check-in link works today, on any phone.</b> No account, no app. The foreman taps it and talks to the agent, and the answers land on tomorrow's plan. Everything after that, the record, the ranking and the morning board, is live.</span></li>
+        <li class="wait"><span class="mk"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span><b>Outbound phone calls are built but switched off.</b> Dialling, the evening round, retries and voicemail are written and tested. They need a paid account with the phone provider, because a trial cannot carry live call audio to an application. Nothing in Muster changes when that account is upgraded.</span></li>
+        <li class="wait"><span class="mk"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span><b>Google sign in is not connected</b>, and a workspace holds one project. Use email and password.</span></li>
+      </ul>
     </div>
   </section>
 

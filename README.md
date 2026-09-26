@@ -4,6 +4,19 @@ Muster calls every subcontractor foreman booked for tomorrow, in English or Span
 
 Built on the AssemblyAI Voice Agent API, with Twilio for phone calls.
 
+## What works right now
+
+Read this first if you are reviewing the submission.
+
+| | |
+|---|---|
+| **Working end to end** | The voice agent, the validated tools, the check-in record, the ranked morning board, the check-in link, accounts and per account workspaces, the Google Sheet source, the schedule, the retry logic and the usage limits. |
+| **Built but not switchable on** | Outbound phone dialling. Muster has a Twilio account, but it is a trial, and a Twilio trial silently refuses to open the Media Stream that carries live call audio. It fetches the instructions, speaks the opening line, then ignores `<Connect><Stream>` and raises no error. Confirmed across two networks and against a public echo server. Upgrading the account is the only fix and no code changes with it. |
+| **Not built** | Google sign in, more than one project per workspace. |
+
+So every conversation you can have with Muster today arrives through the check-in link, which works on any phone with no account and no app. It is the same agent, the same tools and the same record as a phone call. The demo video shows that path, and the phone path is described rather than shown.
+
+
 ## How it works
 
 1. **Plan.** Tomorrow's bookings, entered in Muster or read from a Google Sheet.
